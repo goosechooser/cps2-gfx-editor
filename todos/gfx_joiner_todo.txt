@@ -1,0 +1,4 @@
+***todo***
+->  reconsider folder structure
+-> when de-interleaving diff the sections to see if you 
+need to deinterleave or if you can just copy the old data
