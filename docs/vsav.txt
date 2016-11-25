@@ -1,0 +1,8 @@
+Vsav
+0x900000 8x8
+0x904000 32x32
+0x908000 16x16
+0x90C000 Palette Bank
+
+0x918000 Dark Force 16x16
+0x91C000 Dark Force Palette Bank
