@@ -1,3 +1,6 @@
+# DONT ASK ME FOR ROMS DONT ASK ME FOR ROMS 
+# DONT ASK ME FOR ROMS DONT ASK ME FOR ROMS
+
 # What it is
 * a way to extract graphical assets from cps2 roms
 * a way to modify current graphical assests
