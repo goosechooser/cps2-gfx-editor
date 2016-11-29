@@ -1,6 +1,6 @@
 import numpy as np
 
-class cps2TileBuilder:
+class Cps2TileBuilder:
     #put each bitplane in a seperate list
     def _deinterleave_bitplanes(self, chunk):
         planes = [[], [], [], []]
@@ -38,6 +38,14 @@ class cps2TileBuilder:
         tile_halfs.append(np.concatenate([subtiles[1], subtiles[3]], axis=1))
         return np.concatenate(tile_halfs, axis=0)
 
+    def make_blank_tile8(self):
+        zero = int('0x10', 16)
+        zero = zero.to_bytes(1, byteorder='big')
+        row = row = [zero] * 8
+        tile = [row] * 8
+
+        return(np.array(tile))
+
     def make_tile8(self, chunk):
         mask = int('ff', 16)
         tile_chunk = chunk
@@ -56,6 +64,22 @@ class cps2TileBuilder:
 
         return pixels
 
+    def make_blank_tile16(self):
+        subtiles = [self.make_blank_tile8()] * 4
+        #subtiles.append(self.make_blank_tile8())
+        #subtiles.append(self.make_blank_tile8())
+        #subtiles.append(self.make_blank_tile8())
+        #subtiles.append(self.make_blank_tile8())
+
+        return self._interleave_tiles(subtiles)
+
     def make_tile16(self, chunks):
         subtiles = [self.make_tile8(chunk) for chunk in chunks]
         return self._interleave_tiles(subtiles)
+
+    def make_tile(self, chunks, tile_dim):
+        dim = tile_dim
+        if dim == '8':
+            return self.make_tile8(chunks)
+        if dim == '16':
+            return self.make_tile16(chunks)
