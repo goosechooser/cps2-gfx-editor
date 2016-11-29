@@ -50,7 +50,7 @@ class Cps2GraphicsFileHandler:
             file_name = handle.name.split("/")[-1]
             split_name = file_name.split("_")
             if split_name[1] in ["13", "14", "17", "18"]:
-                interleaved = interleave(handles[i], handles[i+4], 2)
+                interleaved = self.interleave(handles[i], handles[i+4], 2)
                 temp = handles[i+4].name.split("/")[-1]
                 temp = temp.split("_")[1]
                 split_name.insert(-1, temp)
