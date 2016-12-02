@@ -21,6 +21,7 @@ class Cps2GraphicsFileHandler:
 
     #deinterleaves a buffer based on the number of bytes
     def deinterleave(self, data, num_bytes):
+        """Deinterleaves a file and returns two lists."""
         evens = []
         odds = []
         deinterleave_s = Struct('c' * num_bytes)
@@ -35,8 +36,9 @@ class Cps2GraphicsFileHandler:
 
         return evens, odds
 
-    #interleaves two buffers together, based on number of bytes
+
     def interleave(self, file1, file2, num_bytes):
+        """Interleaves two buffers together and return a dict."""
         interleaved = []
         interleave_s = Struct('c' * num_bytes)
         file1_iter = interleave_s.iter_unpack(file1)
@@ -46,11 +48,12 @@ class Cps2GraphicsFileHandler:
             file2_next = next(file2_iter)
             interleave_temp = [*i, *file2_next]
             interleaved.extend(interleave_temp)
-   
+
         interleaved = b''.join(interleaved)
         return interleaved
 
     def _prep_files_for_interleave(self, file_handles):
+        """Reads the entirety of each file in a folder. Returns a dict."""
         keys = []
         values = []
         handles = self._get_file_handles(file_handles)
@@ -64,9 +67,10 @@ class Cps2GraphicsFileHandler:
         return dict(zip(keys, values))
 
     def _split_gfx_files(self, to_split):
+        """Splits files into even and odd words. Returns a dict."""
         keys = []
         values = []
-        #self.deinterleave(to_split['vm3_13'], 2)
+
         for k, v in to_split.items():
             new_keys = ['.'.join([k, 'even']), '.'.join([k, 'odd'])]
             keys.extend(new_keys)
@@ -75,6 +79,7 @@ class Cps2GraphicsFileHandler:
         return dict(zip(keys, values))
 
     def _first_interleave(self, to_interleave):
+        """Interleaves data on a 2 byte basis. Returns a dict"""
         values = []
         keys = []
         file_numbers = [13, 14, 17, 18]
@@ -106,27 +111,8 @@ class Cps2GraphicsFileHandler:
         print(keys)
         return dict(zip(keys, values))
 
-    #def first_interleave(self, input_files, output_files):
-    #    if not exists(output_files):
-    #        os.makedirs(output_files)
-
-    #    handles = self._get_file_handles(input_files)
-    #    for i, handle in enumerate(handles):
-    #        file_name = handle.name.split("/")[-1]
-    #        split_name = file_name.split("_")
-    #        if split_name[1] in ["13", "14", "17", "18"]:
-    #            interleaved = self.interleave(handles[i].read(),
-    #                                          handles[i+4].read(), 2)
-    #            temp = handles[i+4].name.split("/")[-1]
-    #            temp = temp.split("_")[1]
-    #            split_name.insert(-1, temp)
-    #            write_out_name = "_".join(split_name)
-    #            with open(output_files + write_out_name, 'wb') as f:
-    #                f.write(interleaved)
-
-    #   self._clean_up_file_handles(handles)
-
     def _second_interleave(self, to_interleave):
+        """Interleaves data on a 64 byte basis. Returns a dict"""
         print("second interleave starts")
         values = []
         keys = []
@@ -164,45 +150,38 @@ class Cps2GraphicsFileHandler:
         print(keys)
         return dict(zip(keys, values))
 
-    #def second_interleave(self, input_files, output_files):
-    #    if not exists(output_files):
-    #        os.makedirs(output_files)
+    def _final_interleave(self, to_interleave):
+        """Interleaves data on a 1048576 byte basis. Returns a dict"""
+        print("final interleave starts")
+        values = []
+        keys = []
+        file_numbers = [13, 14]
 
-    #    handles = self._get_file_handles(input_files)
-    #    for i, handle in enumerate(handles):
-    #        file_name = handle.name.split("/")[-1]
-    #        split_name = file_name.split("_")
-    #        if split_name[1] in ["13", "14"]:
-    #            interleaved = self.interleave(handles[i], handles[i+4], 64)
-    #            temp = handles[i+4].name.split("/")[-1]
-    #            temp = temp.split("_")
-    #            split_name.insert(-1, temp[1])
-    #            split_name.insert(-1, temp[2])
-    #            write_out_name = "_".join(split_name)
+        key_view = next(iter(to_interleave.keys()))
+        split_name = key_view.split('.')[0]
 
-    #            with open(output_files + write_out_name, 'wb') as f:
-    #                f.write(interleaved)
+        data = to_interleave
 
-    #    self._clean_up_file_handles(handles)
+        for i in file_numbers:
+            temp_keys = [
+                [split_name, str(i), str(i+2), str(i+4), str(i+6), 'even'],
+                [split_name, str(i), str(i+2), str(i+4), str(i+6), 'odd']
+                ]
 
-    def final_interleave(self, input_files, output_files):
-        if not os.path.exists(output_files):
-            os.makedirs(output_files)
+            temp_keys = ['.'.join(key) for key in temp_keys]
 
-        handles = self._get_file_handles(input_files)
-        for i, handle in enumerate(handles):
-            split_name = handle.name.split("/")[-1]
-            if split_name.split("_")[-1] == "evens":
-                interleaved = self.interleave(handle, handles[i+1], 1048576)
+            print('interleaving ' + temp_keys[0] + ' and ' + temp_keys[1])
 
-                interleave_name = split_name.split("_")[:-1]
-                interleave_name.append("final")
-                interleave_name = "_".join(interleave_name)
+            values.append(self.interleave(data[temp_keys[0]],
+                                          data[temp_keys[1]], 1048576))
 
-                with open(output_files + interleave_name, 'wb') as f:
-                    f.write(interleaved)
+            temp_keys = [
+                [split_name, str(i), str(i+2), str(i+4), str(i+6), 'final']
+                ]
+            keys.extend(['.'.join(key) for key in temp_keys])
 
-        self._clean_up_file_handles(handles)
+        print(keys)
+        return dict(zip(keys, values))
 
     def first_deinterleave(self, input_files, output_files):
         if not os.path.exists(output_files):
@@ -338,6 +317,11 @@ class Cps2GraphicsFileHandler:
 
         for k, v in graphics_data.items():
             with open('outputs/refactor/second_interleave/' + k, 'wb') as f:
+                f.write(v)
+
+        graphics_data = self._final_interleave(graphics_data)
+        for k, v in graphics_data.items():
+            with open('outputs/refactor/final_interleave/' + k, 'wb') as f:
                 f.write(v)
 
 if __name__ == "__main__":
