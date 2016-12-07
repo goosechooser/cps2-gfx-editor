@@ -1,36 +1,65 @@
+from struct import unpack, iter_unpack
 from PIL import Image
 import numpy as np
+from Tile import Tile, unpack_tile
 from Cps2TileBuilder import Cps2TileBuilder
 from Cps2TileWriter import Cps2TileWriter
 
 
-#need some kind of reader? something to handle data input
-#need something to build a single 8x8 and 16x16 tile
-#need something to assemble 16x16 tiles into a larger thing
+#need some kind of reader? something to handle data input - FileHandler
+#need something to build a single 8x8 and 16x16 tile - TileBuilder
+#need something to assemble 16x16 tiles into a larger thing -
 #need to print out tiles
+def interleave_tiles(subtiles):
+    tile_halfs = []
+    tile_halfs.append(np.concatenate([subtiles[0], subtiles[2]], axis=1))
+    tile_halfs.append(np.concatenate([subtiles[1], subtiles[3]], axis=1))
+    return np.concatenate(tile_halfs, axis=0)
 
-def test_make_tile8(chunk, number):
-    tile_builder = Cps2TileBuilder()
-    with open(chunk, 'rb') as f:
-        f.seek(224)
-        for i in range(0, number):
-            print("tile " + str(i) + " at " + str(f.tell()))
-            plane = tile_builder.make_tile8(f.read(32))
-            image = Image.fromarray(plane, 'P')
-            image.save("bin_to_bmp/tile_test/tile_" + str(i) + ".bmp")
+def tile_to_array(tile_data, dim):
+    unpacked_tile = tile_data
 
-def test_make_tile16(gfx_file, mem_addresses):
-    tile_builder = Cps2TileBuilder()
-    with open(gfx_file, 'rb') as f:
-        for mame_addr in mem_addresses:
-            addr = int(mame_addr, 16)
-            f.seek(addr)
-            before_addr = f.tell()
-            chunks = [f.read(32), f.read(32), f.read(32), f.read(32)]
-            file_name = "tile_" + hex(int(before_addr))
-            plane = tile_builder.make_tile16(chunks)
-            image = Image.fromarray(plane, 'P')
-            image.save("bin_to_bmp/tiles/" + file_name + ".bmp")
+    if dim == '8':
+        pixel_data = [unpacked_tile[i:i+8] for i in range(0, len(unpacked_tile), 8)]
+        pixel_data = [unpack(8 * 'c', row) for row in pixel_data]
+        pixel_array = np.array(pixel_data)
+        return pixel_array
+
+    if dim == '16':
+        tiles = []
+        tile_fmt = 64 * 'c'
+        tile_iter = iter_unpack(tile_fmt, unpacked_tile)
+        for tile in tile_iter:
+            pixel_data = [tile[i:i+8] for i in range(0, len(tile), 8)]
+            pixel_data = [unpack(8 * 'c', b''.join(row)) for row in pixel_data]
+            tiles.append(np.array(pixel_data))
+
+        return interleave_tiles(tiles)
+
+
+def test_make_tile8(file, addr):
+    read_data = 0
+    with open(file, 'rb') as f:
+        f.seek(int(addr, 16))
+        read_data = f.read(32)
+
+    tile = Tile(addr, read_data, '8')
+    pixel_array = tile_to_array(unpack_tile(tile), tile.dimensions)
+
+    image = Image.fromarray(pixel_array, 'P')
+    image.save("outputs/bin_to_bmp/struct_test.bmp")
+
+def test_make_tile16(file, addr):
+    read_data = 0
+    with open(file, 'rb') as f:
+        f.seek(int(addr, 16))
+        read_data = f.read(128)
+
+    tile16 = Tile(addr, read_data, '16')
+    pixel_array = tile_to_array(unpack_tile(tile16), tile16.dimensions)
+
+    image = Image.fromarray(pixel_array, 'P')
+    image.save("outputs/bin_to_bmp/struct_test.bmp")
 
 #converts the addresses mame displays when you press 'F4' to something else,,
 def convert_mame_addr(mame_addr, tile_size):
@@ -86,11 +115,12 @@ def main():
              ['2F80F', '2F840', '2F841', '2F842', '2F843', '2F844'],
              ['2F815', '2F816', '2F817', '2F818', '2F819', 'blank']]
 
-    #test_make_tile16("bin_to_bmp/vm3_14_16_18_20_final", ['007C2000'])
+    #test_make_tile8("inputs/tiles_to_write/vm3_14_16_18_20_final_edited_test", '00000200')
+    test_make_tile16("inputs/tiles_to_write/vm3_14_16_18_20_final_edited_test", '00000200')
     #process_tile_order("inputs/vm3_14_16_18_20_final", addrs, '16')
-    writer = Cps2TileWriter()
-    img = writer.read_image("inputs/tiles_to_write/temp_ass_edit.bmp")
-    writer.write_to_gfx(img, "inputs/tiles_to_write/vm3_14_16_18_20_final", addrs, '16')
-#IT DONT DO FIND OUT WHY NOT MY GUY
+    #writer = Cps2TileWriter()
+    #img = writer.read_image("inputs/tiles_to_write/temp_ass_edit.bmp")
+    #writer.write_to_gfx(img, "inputs/tiles_to_write/vm3_14_16_18_20_final", addrs, '16')
+
 if __name__ == "__main__":
     main()
