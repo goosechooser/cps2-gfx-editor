@@ -23,26 +23,6 @@ class Tile():
         """Get the pixel value data."""
         return self.tile_dimensions
 
-#class Tile16(Tile8):
-#   tile16 = Struct(32 * 'c')
-
-#    def __init__(self, addr, data):
-#        Tile8.__init__(self, addr, data)
-#        self.tile_addr = addr
-#        self.tile_data = data
-#        self.tile_unpacked = self._unpack_data()
-#        self.tile_interleaved = self._interleave_tiles()
-
-#    def _unpack_data(self):
-#        """This returns the data for 4 8x8 tiles deinterleaved."""
-#        Tile8._unpack_data(self)
-#        tiles = []
-#        for tile8 in self.tile16.iter_unpack(self.tile_data):
-#            result = self._bitplanes_to_tile(b''.join(tile8))
-#            tiles.append(result)
-
-#        return b''.join(tiles)
-
 #Functions to manipulate tile objects below ig
 def unpack_tile(tile):
     """Unpacks a 4bpp planar tile and returns a byte() of pixel values.
@@ -126,3 +106,43 @@ def _pixel_row_to_4bpp(row):
 
     bitplanes.reverse()
     return bytearray(bitplanes)
+
+#Would need to interleave like [subtile1-row1] [subtile3-row1]
+#                          ... [subtile1-row16] [subtile3-row16]
+#                              [subtile2-row1] [subtile4-row1]
+#                          ... [subtile4-row16] [subtile4-row16]
+def interleave_subtiles(unpacked_tile_data):
+    """Row interleaves the 4 8x8 subtiles in a 16x16 tile.
+
+    Returns bytes().
+    """
+    tile_fmt = Struct(64 * 'c')
+    tile_iter = tile_fmt.iter_unpack(unpacked_tile_data)
+
+    subtiles = [b''.join(subtile) for subtile in tile_iter]
+
+    top = _interleave(subtiles[0], subtiles[2])
+    bottom = _interleave(subtiles[1], subtiles[3])
+
+    interleaved = [*top, *bottom]
+    return b''.join(interleaved)
+
+def _interleave(subtile1, subtile2):
+    """Interleaves two 8x8 tiles like
+    [subtile1-row1] [subtile2-row1] ...
+    [subtile1-row16] [subtile2-row16]
+
+    Returns bytes()
+    """
+    interleaved = []
+    interleave_fmt = Struct(8 * 'c')
+
+    left_iter = interleave_fmt.iter_unpack(subtile1)
+    right_iter = interleave_fmt.iter_unpack(subtile2)
+
+    for i in left_iter:
+        right_next = next(right_iter)
+        interleaved.extend([*i, *right_next])
+
+    return interleaved
+
