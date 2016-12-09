@@ -1,6 +1,6 @@
 from Tile import Tile
-from TilePrinter import process_tile_order, tile_to_bmp
-from TileWriter import image_to_tiles
+from tile_printer import process_tile_order, tile_to_bmp
+from tile_writer import image_to_tiles
 #need some kind of reader? something to handle data input - FileHandler
 #need something to build a single 8x8 and 16x16 tile - Tile
 #need something to assemble 16x16 tiles into a larger thing -
