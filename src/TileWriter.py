@@ -3,15 +3,32 @@ from PIL import Image
 import numpy as np
 from Tile import Tile, pack_data
 
-# bmp -> array -> tile ig
-def image_to_tiles(image):
+#TileWriter is currently responsible for:
+#read from bmp -> split to array(s) -> pack new data to tile(s)
+#Should it also handle writing to files??
+
+#wip
+def image_to_tiles(image, addresses):
     image_array = _read_image(image)
-    tiles = _split_array(image_array)
-    tiles = [_deinterleave_tile(tile) for row in tiles for tile in row]
-    [print(tile.shape) for tile in tiles]
+    tiles_array = _split_array(image_array)
+
+    subtile_groups = [_deinterleave_tile_array(tile_array) for tile_array in tiles_array]
+    addr = flatten_list(addresses)
+
+    tiles = []
+    filtered = [zipped for zipped in zip(addr, subtile_groups) if zipped[0] != 'blank']
+
+    for tile in filtered:
+        data = []
+        data = _array_group_to_tile(tile[1])
+        packed = pack_data(bytes(data))
+        tiles.append(Tile(tile[0], packed, 16))
+
+    #print(len(tiles))
+    return tiles
 
 def _read_image(image):
-    """Opens .bmp image. 
+    """Opens .bmp image.
 
     Returns an array.
     """
@@ -20,84 +37,37 @@ def _read_image(image):
 
 #Splits image into 16x16 tiles
 def _split_array(image):
+    """Splits an image into 16x16 sized tiles.
+
+    Returns a list of arrays.
+    """
     tiles = []
     dims = image.shape
-
-    split_image = np.vsplit(image, int(dims[1]/16))
+    split_image = np.vsplit(image, int(dims[0]/16))
     for tile in split_image:
-        tiles.append(np.hsplit(tile, int(dims[0]/16)))
+        tiles.extend(np.hsplit(tile, int(dims[1]/16)))
     return tiles
 
-def _deinterleave_tile(tile):
+def _deinterleave_tile_array(tile_array):
+    """Deinterleaves the array representing a 16x16 tile.
+
+    Returns a list of arrays.
+    """
     temp_tiles = []
-    split_tiles = np.vsplit(tile, 2)
+    split_tiles = np.vsplit(tile_array, 2)
 
     for half in split_tiles:
         temp_tiles.extend(np.hsplit(half, 2))
 
     return [temp_tiles[0], temp_tiles[2], temp_tiles[1], temp_tiles[3]]
 
-#def  _convert_row_of_pixels_to_4bpp(row_of_pixels):
-#    pixels = row_of_pixels.tolist()[0]
-#    bitplanes = [int(b'00000000')] * 4
-#    mask = int(b'00000001')
-
-#    for pixel in pixels:
-#        for i, plane in enumerate(bitplanes):
-#            bitplanes[i] = (plane << 1) | (pixel & mask)
-#            pixel = pixel >> 1
-    #print(bitplanes)
-#    return bitplanes
-
-#for each row of pixels: convert each pixel into its bitplane equivalent
-#producing 4 bitplanes of length 8
-#def _tile_to_bitplanes(tile):
-#    rows = np.vsplit(tile, 8)
-#    bitplanes = []
-#    for row in rows:
-#        bitplanes.extend(_convert_row_of_pixels_to_4bpp(row))
-
-#    return bitplanes
-
-#def write_tile8(tile):
-#    bitplane_values = []
-#    #need to flip array
-#    flipped_tile = np.fliplr(tile)
-#    bitplane_values = _tile_to_bitplanes(flipped_tile)
-
-    #need to flip bits
-#    reversed_bits = [int('{:08b}'.format(n)[::-1], 2) for n in bitplane_values]
-#    bitplane_bytes = [value.to_bytes(1, byteorder='big') for value in reversed_bits]
-
-#    poppin = []
-
-    #this part would be _pack_bitplanes()
-#    for i in range(8):
-#        offset = 4 * i
-#        temp = bitplane_bytes[offset:offset+4]
-#        temp.reverse()
-#        poppin.extend(temp)
-
-    #push it all back on in correct order ie push plane3, plane2, plane1 etc
-    #write tile to given address
- #   return poppin
-
-#Turn 1 16x16 tile into 4 8x8 tiles (and also row interleave them ig)
-#should reconsider this function name
-
-
-def write_tile16(tile):
-    deinterleaved = _deinterleave_tile(tile)
-    tile_bytes = []
-    for tile8 in deinterleaved:
-        tile_bytes.extend(write_tile8(tile8))
-    return tile_bytes
-
-def write_tile(tile, dim):
-    if dim == '8':
-        return write_tile8(tile)
-    if dim == '16':
-        return write_tile16(tile)
+#Currently for 16x16 tiles only
+def _array_group_to_tile(subtiles):
+    rows = []
+    for sub in subtiles:
+        for row in sub.tolist():
+            rows.extend(row)
+    return rows
 
 #converts the addresses mame displays when you press 'F4' to something else
 def convert_mame_addr(mame_addr, tile_size):
@@ -118,30 +88,20 @@ def convert_mame_addr(mame_addr, tile_size):
 
     return converted_addr
 
-def unroll_addresses(addresses):
-    unroll = []
-    return [unroll.extend(row) for row in addresses]
+def flatten_list(rolled_list):
+    flat = [x for sublist in rolled_list for x in sublist]
+    return flat
 
 #write image to graphics file
-def write_to_gfx(image, gfx_file, addresses, tile_dim):
-    tiles = unroll_addresses(_split_to_tile16(image))
-    addrs = unroll_addresses(addresses)
-
-    for i, addr in enumerate(addrs):
-        if addr != 'blank':
-            tile_bytes = write_tile(tiles[i], tile_dim)
-            converted_addr = convert_mame_addr(addrs[i], tile_dim)
-
+#wasn't writing the data from the gfx_file that comes after the tile data to the file
+def write_tiles_to_gfx(tiles, gfx_file):
     #should read file and store results in a buffer with first 'with open'
     #then write pre-edit, edit, and post-edit data with a 2nd 'with open'
     #look into struct, could pack 16x16 tiles as a struct
     with open(gfx_file, 'wb+') as f:
         end = f.read()
         f.write(end)
-        for i, addr in enumerate(addrs):
-            if addr != 'blank':
-                tile_bytes = write_tile(tiles[i], tile_dim)
-                converted_addr = convert_mame_addr(addrs[i], tile_dim)
-                f.seek(converted_addr)
-                for tile_byte in tile_bytes:
-                    f.write(tile_byte)
+        for tile in tiles:
+            converted_addr = convert_mame_addr(tile.address, tile.dimensions)
+            f.seek(converted_addr)
+            f.write(tile.data)
