@@ -45,11 +45,3 @@ def test_interleave_subtiles():
     assert bytearray(b''.join(tiles[1])).hex() == '0f0f0f0f0000000f0f0f0f0f00000f0f' * 4
     assert bytearray(b''.join(tiles[2])).hex() == '0f0f0f0f00000f000f0f0f0f000f0000' * 4
     assert bytearray(b''.join(tiles[3])).hex() == '0f0f0f0f00000f000f0f0f0f000f0000' * 4
-
-if __name__ == "__main__":
-    #test_unpack_tile1()
-    #test_unpack_tile2()
-    #test_pack_data1()
-    #test_pack_data2()
-    test_interleave_subtiles()
-
