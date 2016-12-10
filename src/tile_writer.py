@@ -1,13 +1,10 @@
-from struct import unpack, iter_unpack
 from PIL import Image
 import numpy as np
 from Tile import Tile, pack_data
 
 #TileWriter is currently responsible for:
 #read from bmp -> split to array(s) -> pack new data to tile(s)
-#Should it also handle writing to files??
 
-#wip
 def image_to_tiles(image, addresses):
     image_array = _read_image(image)
     tiles_array = _split_array(image_array)
@@ -24,7 +21,6 @@ def image_to_tiles(image, addresses):
         packed = pack_data(bytes(data))
         tiles.append(Tile(tile[0], packed, 16))
 
-    #print(len(tiles))
     return tiles
 
 def _read_image(image):
@@ -73,9 +69,9 @@ def _array_group_to_tile(subtiles):
 def convert_mame_addr(mame_addr, tile_size):
     tile_bytes = 0
     addr = int(mame_addr, 16)
-    if tile_size is '8':
+    if tile_size == 8:
         tile_bytes = 32
-    if tile_size is '16':
+    if tile_size == 16:
         tile_bytes = 128
 
     converted_addr = addr * tile_bytes
@@ -97,11 +93,30 @@ def flatten_list(rolled_list):
 def write_tiles_to_gfx(tiles, gfx_file):
     #should read file and store results in a buffer with first 'with open'
     #then write pre-edit, edit, and post-edit data with a 2nd 'with open'
-    #look into struct, could pack 16x16 tiles as a struct
-    with open(gfx_file, 'wb+') as f:
-        end = f.read()
-        f.write(end)
-        for tile in tiles:
+    gfx_reader = open(gfx_file, 'rb')
+    sorted_tiles = sorted(tiles, key=lambda tile: tile.address)
+    sorted_addrs = [tile.address for tile in sorted_tiles]
+    print(sorted_addrs)
+    with open(gfx_file + '_edit', 'wb') as f:
+        for tile in sorted_tiles:
             converted_addr = convert_mame_addr(tile.address, tile.dimensions)
-            f.seek(converted_addr)
-            f.write(tile.data)
+            read_length = converted_addr - gfx_reader.tell()
+            print("tile address: " + str(tile.address))
+            print("converted addr: " + str(converted_addr))
+            print("gfx reader tell before: " + str(gfx_reader.tell()))
+            print("read_length: " + str(read_length))
+            if read_length == 128:
+                gfx_reader.seek(read_length, 1)
+                f.write(tile.data)
+            else:
+                unchanged_gfx = gfx_reader.read(read_length)
+                f.write(unchanged_gfx)
+                gfx_reader.seek(128, 1)
+                f.write(tile.data)
+            print("gfx reader tell after: " + str(gfx_reader.tell()))
+
+        final_read = gfx_reader.read()
+        print(len(final_read))
+        f.write(final_read)
+
+    gfx_reader.close()

@@ -1,6 +1,6 @@
+from PIL import Image
 from tile_printer import process_tile_order, concat_tiles, make_tiles
 from tile_writer import image_to_tiles, flatten_list
-from PIL import Image
 
 ADDRS = [['blank', '2F810', '2F811', '2F812', '2F813', '2F814'],
          ['blank', '2F820', '2F821', '2F822', '2F823', '2F824'],
