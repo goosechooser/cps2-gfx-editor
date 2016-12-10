@@ -1,5 +1,8 @@
 from gfx_file_handler import deinterleave, interleave
 
+#note to self: should add test_deinterleave_files() and test_interleave_files()
+#would help demonstrate correctness without needing external .bat scripts
+
 def test_deinterleave():
     test_data = bytearray.fromhex('F1 FF 00 00 00 01 FF FF')
     #handler = Cps2GraphicsFileHandler()

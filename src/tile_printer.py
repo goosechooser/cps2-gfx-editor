@@ -51,21 +51,38 @@ def _make_blank_tile(size):
 #         ['blank', '2F820',]]
 
 def make_tiles(gfx_file, addresses, tile_dim):
+    """Given a list of addresses and tile dimensions (8 or 16),
+    reads from the provided graphics file and creates Tile object(s).abs
+
+    Returns either a list of Tiles or a list of lists of Tiles.
+    """
     tiles = []
     with open(gfx_file, 'rb') as f:
-        for row_of_addresses in addresses:
-            row = []
-            for tile_addr in row_of_addresses:
+        if any(isinstance(el, list) for el in addresses):
+            for row_of_addresses in addresses:
+                row = []
+                for tile_addr in row_of_addresses:
+                    if tile_addr != 'blank':
+                        f.seek(convert_mame_addr(tile_addr, tile_dim))
+                        if tile_dim == 8:
+                            read_data = f.read(32)
+                        if tile_dim == 16:
+                            read_data = f.read(128)
+                        row.append(Tile(tile_addr, read_data, tile_dim))
+                    else:
+                        row.append(Tile('blank', 0, 16))
+                tiles.append(row)
+        else:
+            for tile_addr in addresses:
                 if tile_addr != 'blank':
                     f.seek(convert_mame_addr(tile_addr, tile_dim))
                     if tile_dim == 8:
                         read_data = f.read(32)
                     if tile_dim == 16:
                         read_data = f.read(128)
-                    row.append(Tile(tile_addr, read_data, tile_dim))
+                    tiles.append(Tile(tile_addr, read_data, tile_dim))
                 else:
-                    row.append(Tile('blank', 0, 16))
-            tiles.append(row)
+                    tiles.append(Tile('blank', 0, 16))
 
     return tiles
 

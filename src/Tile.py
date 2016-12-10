@@ -12,6 +12,9 @@ class Tile():
     def address(self):
         """Get the address in memory where the tile is located."""
         return self.tile_addr
+    @address.setter
+    def address(self, value):
+        self.tile_addr = value
 
     @property
     def data(self):
