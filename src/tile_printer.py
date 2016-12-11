@@ -50,7 +50,7 @@ def _make_blank_tile(size):
 #addrs = [['blank', '2F810',],
 #         ['blank', '2F820',]]
 
-def make_tiles(gfx_file, addresses, tile_dim):
+def make_tiles(gfx_file, addresses, tile_dim=16):
     """Given a list of addresses and tile dimensions (8 or 16),
     reads from the provided graphics file and creates Tile object(s).abs
 
@@ -103,16 +103,12 @@ def process_tile_order(tiles):
         pic_array.append(row)
 
     return pic_array
-    #array_rows = []
-    #for row in tiles:
-    #    array_rows.append(np.concatenate(row, axis=1))
-    #assembled = np.concatenate(array_rows, axis=0)
-
-    #image = Image.fromarray(assembled, 'P')
-    #file_name = "temp_ass"
-    #image.save("outputs/bin_to_bmp/tiles/" + file_name + ".bmp")
 
 def concat_tiles(tiles):
+    """Concatenates a 2D list of arrays into one array.
+
+    Returns an array.
+    """
     array_rows = []
     for row in tiles:
         array_rows.append(np.concatenate(row, axis=1))
@@ -120,17 +116,27 @@ def concat_tiles(tiles):
 
     return assembled
 
-def gfx_to_bmp(gfx_file, addresses, tile_dim, file_path):
+def gfx_to_bmp(gfx_file, addresses, output_image, tile_dim=16):
+    """Encapsulates all the seperate steps.
+    Produces a BMP file.
+    """
     tiles = make_tiles(gfx_file, addresses, tile_dim)
     pic_array = process_tile_order(tiles)
     assembled = concat_tiles(pic_array)
 
     image = Image.fromarray(assembled, 'P')
 
-    image.save(file_path)
+    image.save(output_image)
 
-    #converts the addresses mame displays when you press 'F4' to something else
+    #MAME address values are based on the size of the tiles you are viewing.
+    #ie [ADDR] when viewing 8x8 and 16x16 tiles don't point to the same location.
+    #This is because MAME uses the address value as a sort of index
+    #to where the tile data starts.
 def convert_mame_addr(mame_addr, tile_size):
+    """Converts the address value MAME displays when you press 'F4'.
+
+    Returns an int.
+    """
     tile_bytes = 0
     addr = int(mame_addr, 16)
     if tile_size == 8:

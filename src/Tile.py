@@ -27,10 +27,12 @@ class Tile():
         return self.tile_dimensions
 
 #Functions to manipulate tile objects below ig
+#Doesn't check if a tile is 8x8 or 16x16, should it?
+#Should this return raw data or should it return a Tile obj?
 def unpack_tile(tile):
-    """Unpacks a 4bpp planar tile and returns a byte() of pixel values.
-    Doesn't check if a tile is 8x8 or 16x16, should it?
-    Should this return raw data or should it return a Tile obj?
+    """Unpacks a 4bpp planar tile.
+
+    Returns a byte() of pixel values.
     """
     tile_fmt = Struct(32 * 'c')
     tile_iter = tile_fmt.iter_unpack(tile.data)
@@ -52,6 +54,12 @@ def _bitplanes_to_tile(data):
     return b''.join(pixels)
 
 def _unpack_bitplanes(data):
+    """The values that make up a row of pixels are organized like:
+    [bp1-row1] [bp2-row1] [bp3-row1] [bp4-row1]...
+    [bp1-row8] [bp2-row8] [bp3-row8] [bp4-row8]
+
+    Returns a list of lists containing bitplane values (bytes).
+    """
     planes = [[], [], [], []]
     data_iter = Struct('c').iter_unpack(data)
 
@@ -64,6 +72,10 @@ def _unpack_bitplanes(data):
     return planes
 
 def _make_row_of_pixels(bitplane_rows):
+    """Converts the 4 bytes of bitplanes 1-4 for a given row in the tile into a row of pixel values
+
+    Returns bytes()
+    """
     mask = int(b'00000001')
     bitplane_values = bitplane_rows
     row_of_pixels = []

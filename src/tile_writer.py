@@ -90,21 +90,21 @@ def flatten_list(rolled_list):
 
 #write image to graphics file
 #wasn't writing the data from the gfx_file that comes after the tile data to the file
-def write_tiles_to_gfx(tiles, gfx_file):
-    #should read file and store results in a buffer with first 'with open'
-    #then write pre-edit, edit, and post-edit data with a 2nd 'with open'
+def write_tiles_to_gfx(tiles, gfx_file, output_file=None):
+    if output_file is None:
+        output_file = gfx_file + '_edit'
+
     gfx_reader = open(gfx_file, 'rb')
-    sorted_tiles = sorted(tiles, key=lambda tile: tile.address)
-    sorted_addrs = [tile.address for tile in sorted_tiles]
-    print(sorted_addrs)
-    with open(gfx_file + '_edit', 'wb') as f:
+    sorted_tiles = sorted(tiles, key=lambda tile: int(tile.address, 16))
+
+    with open(output_file, 'wb') as f:
         for tile in sorted_tiles:
             converted_addr = convert_mame_addr(tile.address, tile.dimensions)
             read_length = converted_addr - gfx_reader.tell()
             print("tile address: " + str(tile.address))
-            print("converted addr: " + str(converted_addr))
-            print("gfx reader tell before: " + str(gfx_reader.tell()))
-            print("read_length: " + str(read_length))
+            #print("converted addr: " + str(converted_addr))
+            #print("gfx reader tell before: " + str(gfx_reader.tell()))
+            #print("read_length: " + str(read_length))
             if read_length == 128:
                 gfx_reader.seek(read_length, 1)
                 f.write(tile.data)
@@ -113,10 +113,9 @@ def write_tiles_to_gfx(tiles, gfx_file):
                 f.write(unchanged_gfx)
                 gfx_reader.seek(128, 1)
                 f.write(tile.data)
-            print("gfx reader tell after: " + str(gfx_reader.tell()))
 
         final_read = gfx_reader.read()
-        print(len(final_read))
+        #print(len(final_read))
         f.write(final_read)
 
     gfx_reader.close()

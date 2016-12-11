@@ -5,8 +5,3 @@
 
 -> once you have palette working, need a way to strip palette info
 --> ie RGB 24bit back to 8bit
-
-->figure out how to convert 8bit palette pixel info back to 4bpp codec
-
-->probably want to create an interface for the data so you 
-could use 'mame memory values'
