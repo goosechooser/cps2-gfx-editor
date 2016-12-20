@@ -1,9 +1,8 @@
-from __future__ import generators
 from struct import Struct, iter_unpack
+from PIL import Image
 import numpy as np
 
 class Tile():
-
     def __init__(self, addr, data, dimensions=16, packed=True):
         self._tile_addr = addr
         if packed:
@@ -136,7 +135,7 @@ class Tile():
         bitplanes.reverse()
         return bytearray(bitplanes)
 
-    def to_array(self):
+    def toarray(self):
         """Uses 8x8 or 16x16 Tile data to create an array of the tile's data.
 
         Returns an array.
@@ -148,6 +147,11 @@ class Tile():
         tiles = [subtile for subtile in tile_iter]
 
         return np.array(tiles)
+
+    def tobmp(self, path_to_save):
+        """Creates a .bmp image from a single 8x8 or 16x16 tile."""
+        image = Image.fromarray(self.toarray(), 'P')
+        image.save(path_to_save + ".bmp")
 
 #Would need to interleave like [subtile1-row1] [subtile3-row1]
 #                          ... [subtile1-row16] [subtile3-row16]
@@ -192,4 +196,11 @@ class EmptyTile(Tile):
 
     def __init__(self, dimensions):
         super().__init__('BLANK', None, dimensions)
+
+    def toarray(self):
+        zero = int('0x20', 16).to_bytes(1, byteorder='big')
+        row = [zero] * self._tile_dimensions
+        tile = [row] * self._tile_dimensions
+
+        return np.array(tile)
 
