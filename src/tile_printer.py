@@ -1,7 +1,7 @@
-from struct import iter_unpack
+from struct import iter_unpack, unpack
 from PIL import Image
 import numpy as np
-from Tile import Tile, unpack_tile, interleave_subtiles
+from Tile import Tile
 
 #TilePrinter is currently responsible for:
 #read combined eprom file(s) -> create tile(s) -> convert to array(s) -> create bmp(s)
@@ -13,27 +13,9 @@ from Tile import Tile, unpack_tile, interleave_subtiles
 #without mucking around at a lower level
 #Ideas for glitchy tileset -> just rearrage all the tiles and write back like regular
 
-def tile_to_array(tile):
-    """Uses 8x8 or 16x16 Tile data to create an array of the tile's data.
-
-    Returns an array.
-    """
-    unpacked_tile = unpack_tile(tile)
-
-    if tile.dimensions == 16:
-        interleaved_tiles = interleave_subtiles(unpacked_tile)
-    else:
-        interleaved_tiles = unpacked_tile
-
-    tile_fmt = tile.dimensions * 'c'
-    tile_iter = iter_unpack(tile_fmt, interleaved_tiles)
-    tiles = [subtile for subtile in tile_iter]
-
-    return np.array(tiles)
-
 def tile_to_bmp(tile, path_to_save):
     """Creates a .bmp image from a single 8x8 or 16x16 tile."""
-    tile_array = tile_to_array(tile)
+    tile_array = tile.to_array()
     image = Image.fromarray(tile_array, 'P')
     image.save(path_to_save + ".bmp")
 
@@ -97,20 +79,20 @@ def process_tile_order(tiles):
         row = []
         for tile in row_of_tiles:
             if tile.address != 'blank':
-                row.append(tile_to_array(tile))
+                row.append(tile.to_array())
             else:
                 row.append(_make_blank_tile(16))
         pic_array.append(row)
 
     return pic_array
 
-def concat_tiles(tiles):
+def concat_arrays(arrays):
     """Concatenates a 2D list of arrays into one array.
 
     Returns an array.
     """
     array_rows = []
-    for row in tiles:
+    for row in arrays:
         array_rows.append(np.concatenate(row, axis=1))
     assembled = np.concatenate(array_rows, axis=0)
 
@@ -122,7 +104,7 @@ def gfx_to_bmp(gfx_file, addresses, output_image, tile_dim=16):
     """
     tiles = make_tiles(gfx_file, addresses, tile_dim)
     pic_array = process_tile_order(tiles)
-    assembled = concat_tiles(pic_array)
+    assembled = concat_arrays(pic_array)
 
     image = Image.fromarray(assembled, 'P')
 
