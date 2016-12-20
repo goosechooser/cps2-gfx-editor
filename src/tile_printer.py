@@ -1,7 +1,7 @@
 from struct import iter_unpack, unpack
 from PIL import Image
 import numpy as np
-from Tile import Tile
+from src import Tile
 
 #TilePrinter is currently responsible for:
 #read combined eprom file(s) -> create tile(s) -> convert to array(s) -> create bmp(s)
@@ -50,9 +50,9 @@ def make_tiles(gfx_file, addresses, tile_dim=16):
                             read_data = f.read(32)
                         if tile_dim == 16:
                             read_data = f.read(128)
-                        row.append(Tile(tile_addr, read_data, tile_dim))
+                        row.append(Tile.Tile(tile_addr, read_data, tile_dim))
                     else:
-                        row.append(Tile('blank', 0, 16))
+                        row.append(Tile.Tile('blank', 0, 16))
                 tiles.append(row)
         else:
             for tile_addr in addresses:

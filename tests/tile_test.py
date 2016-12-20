@@ -1,5 +1,5 @@
 from struct import Struct
-from Tile import Tile
+from src import Tile
 
 TEST_ADDR = ''
 TEST_DATA = 'F1F2F3F4F1F2F3F4F1F2F3F4F1F2F3F4F1F2F3F4F1F2F3F4F1F2F3F4F1F2F3F4'
@@ -9,19 +9,19 @@ ROW_FMT = Struct(8 * 'c')
 TILE_FMT = Struct(64 * 'c')
 
 def test_unpack_tile1():
-    tile = Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA), '8')
+    tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA), '8')
 
     for row in ROW_FMT.iter_unpack(tile.unpack()):
         assert bytearray(b''.join(row)).hex() == '0f0f0f0f0001060a'
 
 def test_unpack_tile2():
-    tile = Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA16), '16')
+    tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA16), '16')
 
     for row in ROW_FMT.iter_unpack(tile.unpack()):
         assert bytearray(b''.join(row)).hex() == '0f0f0f0f0001060a'
 
 def test_pack_data1():
-    tile = Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA), '8')
+    tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA), '8')
     unpacked = tile.unpack()
 
     tile.pack(unpacked)
@@ -29,7 +29,7 @@ def test_pack_data1():
         assert bytearray(b''.join(row)).hex() == 'f1f2f3f4f1f2f3f4'
 
 def test_pack_data2():
-    tile = Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA16), '16')
+    tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA16), '16')
     unpacked = tile.unpack()
 
     tile.pack(unpacked)
@@ -38,7 +38,7 @@ def test_pack_data2():
 
 def test_interleave_subtiles():
     test_data = 'F1' * 32 + 'F2' * 32 + 'F3' * 32 + 'F4' * 32
-    tile = Tile(TEST_ADDR, bytearray.fromhex(test_data), '16')
+    tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(test_data), '16')
 
     tile = tile.interleave_subtiles()
     interleaved = tile.unpack()
