@@ -1,7 +1,7 @@
 from struct import iter_unpack, unpack
 from PIL import Image
 import numpy as np
-from src import Tile
+from src import Tile, helper
 
 #TilePrinter is currently responsible for:
 #read combined eprom file(s) -> create tile(s) -> convert to array(s) -> create bmp(s)
@@ -12,20 +12,6 @@ from src import Tile
 #Changing to arrays allows for more flexible processing of 16x16 tiles
 #without mucking around at a lower level
 #Ideas for glitchy tileset -> just rearrage all the tiles and write back like regular
-
-def tile_to_bmp(tile, path_to_save):
-    """Creates a .bmp image from a single 8x8 or 16x16 tile."""
-    tile_array = tile.to_array()
-    image = Image.fromarray(tile_array, 'P')
-    image.save(path_to_save + ".bmp")
-
-#This could probably be done as make data for Tile and whambam
-def _make_blank_tile(size):
-    zero = int('0x20', 16).to_bytes(1, byteorder='big')
-    row = [zero] * size
-    tile = [row] * size
-
-    return np.array(tile)
 
 #the way a group of 16x16 tiles is given, is how the final picture is assembled
 #example of how addresses are formatted
@@ -44,27 +30,27 @@ def make_tiles(gfx_file, addresses, tile_dim=16):
             for row_of_addresses in addresses:
                 row = []
                 for tile_addr in row_of_addresses:
-                    if tile_addr != 'blank':
-                        f.seek(convert_mame_addr(tile_addr, tile_dim))
+                    if tile_addr.upper() != 'BLANK':
+                        f.seek(helper.convert_mame_addr(tile_addr, tile_dim))
                         if tile_dim == 8:
                             read_data = f.read(32)
                         if tile_dim == 16:
                             read_data = f.read(128)
                         row.append(Tile.Tile(tile_addr, read_data, tile_dim))
                     else:
-                        row.append(Tile.Tile('blank', 0, 16))
+                        row.append(Tile.EmptyTile(16))
                 tiles.append(row)
         else:
             for tile_addr in addresses:
-                if tile_addr != 'blank':
-                    f.seek(convert_mame_addr(tile_addr, tile_dim))
+                if tile_addr.upper() != 'BLANK':
+                    f.seek(helper.convert_mame_addr(tile_addr, tile_dim))
                     if tile_dim == 8:
                         read_data = f.read(32)
                     if tile_dim == 16:
                         read_data = f.read(128)
-                    tiles.append(Tile(tile_addr, read_data, tile_dim))
+                    tiles.append(Tile.Tile(tile_addr, read_data, tile_dim))
                 else:
-                    tiles.append(Tile('blank', 0, 16))
+                    tiles.append(Tile.EmptyTile(16))
 
     return tiles
 
@@ -78,10 +64,8 @@ def process_tile_order(tiles):
     for row_of_tiles in tiles:
         row = []
         for tile in row_of_tiles:
-            if tile.address != 'blank':
-                row.append(tile.to_array())
-            else:
-                row.append(_make_blank_tile(16))
+            row.append(tile.toarray())
+
         pic_array.append(row)
 
     return pic_array
@@ -109,28 +93,3 @@ def gfx_to_bmp(gfx_file, addresses, output_image, tile_dim=16):
     image = Image.fromarray(assembled, 'P')
 
     image.save(output_image)
-
-    #MAME address values are based on the size of the tiles you are viewing.
-    #ie [ADDR] when viewing 8x8 and 16x16 tiles don't point to the same location.
-    #This is because MAME uses the address value as a sort of index
-    #to where the tile data starts.
-def convert_mame_addr(mame_addr, tile_size):
-    """Converts the address value MAME displays when you press 'F4'.
-
-    Returns an int.
-    """
-    tile_bytes = 0
-    addr = int(mame_addr, 16)
-    if tile_size == 8:
-        tile_bytes = 32
-    if tile_size == 16:
-        tile_bytes = 128
-
-    converted_addr = addr * tile_bytes
-    memory_bank_size = int('0x1000000', 16)
-
-    #currently the 8 eproms are split into 2 banks
-    if converted_addr > memory_bank_size:
-        converted_addr -= memory_bank_size
-
-    return converted_addr
