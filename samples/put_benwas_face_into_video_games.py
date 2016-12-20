@@ -1,9 +1,6 @@
 #from struct import iter_unpack
 from PIL import Image
-import numpy as np
-from tile_printer import make_tiles, concat_arrays, process_tile_order
-from tile_writer import image_to_tiles
-from ColorTile import ColorTile
+from src import ColorTile, tile_printer
 
 def argb_to_rgb(color):
     return bytes.fromhex(color[1] * 2 + color[2] * 2 + color[3] * 2)
@@ -46,9 +43,9 @@ def list_to_2D_list(list_1d, row_length):
     return list_2d
 
 def make_color_tiles(gfx_file, tile_numbers):
-    dmitri_tiles = make_tiles(gfx_file, tile_numbers)
-    dmitri_array = process_tile_order(dmitri_tiles)
-    dmitri_array = concat_arrays(dmitri_array)
+    dmitri_tiles = tile_printer.make_tiles(gfx_file, tile_numbers)
+    dmitri_array = tile_printer.process_tile_order(dmitri_tiles)
+    dmitri_array = tile_printer.concat_arrays(dmitri_array)
 
     image = Image.fromarray(dmitri_array, 'RGB')
     image.save("bless.bmp")
@@ -62,7 +59,7 @@ def do_it():
     tile_numbers = [td['tile_number'] for td in tile_dicts]
 
 
-    tiles = make_tiles(gfx_file, tile_numbers)
+    tiles = tile_printer.make_tiles(gfx_file, tile_numbers)
 
     #is this the new make_color_tiles()?
     color_tiles = []
@@ -71,16 +68,18 @@ def do_it():
         palette = t_d['palette']
         location = (int(t_d['x']), int(t_d['y']))
         size = (int(t_d['width']), int(t_d['height']))
-        color_tile = ColorTile(tile.address, tile.data, palette, location, size)
+        color_tile = ColorTile.ColorTile(tile.address, tile.data, palette, location, size)
         color_tiles.append(color_tile)
 
     sorted_tiles = sorted(color_tiles,
                           key=lambda tile: (tile.location[0], tile.location[1]))
 
+    sorted_tiles[0].tobmp("help")
     sorted_tiles = list_to_2D_list(sorted_tiles[:25], 5)
 
-    dmitri_array = process_tile_order(sorted_tiles)
-    dmitri_array = concat_arrays(dmitri_array)
+    
+    dmitri_array = tile_printer.process_tile_order(sorted_tiles)
+    dmitri_array = tile_printer.concat_arrays(dmitri_array)
 
     image = Image.fromarray(dmitri_array, 'RGB')
     image.save("bless.bmp")
@@ -89,22 +88,22 @@ def put_benwa_into_video_game(benwa_path, gfx_file):
     benwaddrs = [['1B4E0', '1B4E1', '1B4E2'],
                  ['1B4F0', '1B4F1', '1B4F2']]
 
-    benwa_tiles = image_to_tiles(benwa_path, benwaddrs)
-    benwa_tiles = [[benwa_tiles[0], benwa_tiles[1], benwa_tiles[2]],
-                   [benwa_tiles[3], benwa_tiles[4], benwa_tiles[5]]]
+    #benwa_tiles = tile_printer.image_to_tiles(benwa_path, benwaddrs)
+    #benwa_tiles = [[benwa_tiles[0], benwa_tiles[1], benwa_tiles[2]],
+    #               [benwa_tiles[3], benwa_tiles[4], benwa_tiles[5]]]
 
-    benwa_tiles = process_tile_order(benwa_tiles)
+    #benwa_tiles = process_tile_order(benwa_tiles)
 
 
-    benwa_tiles = concat_arrays(benwa_tiles)
+    #benwa_tiles = concat_arrays(benwa_tiles)
 
-    for x in np.nditer(benwa_tiles, op_flags=['readwrite']):
-        val = int.from_bytes(np.asscalar(x[...]), byteorder='big')
-        if val == 1:
-            x[...] = abs(val - 16).to_bytes(1, byteorder='big')
+    #for x in np.nditer(benwa_tiles, op_flags=['readwrite']):
+    #    val = int.from_bytes(np.asscalar(x[...]), byteorder='big')
+    #    if val == 1:
+    #        x[...] = abs(val - 16).to_bytes(1, byteorder='big')
 
-    image = Image.fromarray(benwa_tiles, 'P')
-    image.save('help.bmp')
+    #image = Image.fromarray(benwa_tiles, 'P')
+    #image.save('help.bmp')
 
 if __name__ == "__main__":
     do_it()
