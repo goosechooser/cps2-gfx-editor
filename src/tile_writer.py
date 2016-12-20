@@ -1,6 +1,6 @@
 from PIL import Image
 import numpy as np
-from Tile import Tile, pack_data
+from Tile import Tile
 
 #TileWriter is currently responsible for:
 #read from bmp -> split to array(s) -> pack new data to tile(s)
@@ -18,8 +18,7 @@ def image_to_tiles(image, addresses):
     for tile in filtered:
         data = []
         data = _array_group_to_tile(tile[1])
-        packed = pack_data(bytes(data))
-        tiles.append(Tile(tile[0], packed, 16))
+        tiles.append(Tile(tile[0], bytes(data), 16, packed=False))
 
     return tiles
 
