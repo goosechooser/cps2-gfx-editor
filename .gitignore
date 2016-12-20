@@ -7,3 +7,4 @@ gfx_joiner_bak.py
 *.jpg
 lua/
 scripts/
+*egg-info
