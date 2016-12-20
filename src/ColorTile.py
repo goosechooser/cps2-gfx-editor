@@ -1,8 +1,9 @@
 from struct import iter_unpack
-from Tile import Tile
+from src import Tile
+from PIL import Image
 import numpy as np
 
-class ColorTile(Tile):
+class ColorTile(Tile.Tile):
     def __init__(self, addr, data, palette, location, size):
         super().__init__(addr, data)
         self._palette = palette
@@ -28,7 +29,7 @@ class ColorTile(Tile):
     def size(self):
         return self._size
 
-    def to_array(self):
+    def toarray(self):
         """Unpacks the tile and fills in pixel color.
 
         Returns an array.
@@ -48,3 +49,8 @@ class ColorTile(Tile):
             color_tile.append(color_row)
 
         return np.array(color_tile)
+
+    def tobmp(self, path_to_save):
+        """Creates a .bmp image from a single 8x8 or 16x16 tile."""
+        image = Image.fromarray(self.toarray(), 'RGB')
+        image.save(path_to_save + ".bmp")
