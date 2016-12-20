@@ -6,8 +6,8 @@ if __name__ == "__main__":
     #    with open('outputs/refactor/roms/' + k, 'wb') as f:
     #        f.write(v)
 
-    GFX_DATA = deinterleave_files("inputs/refactor")
+    GFX_DATA = deinterleave_files("inputs/roms")
     for k, v in GFX_DATA.items():
-        with open('outputs/refactor/roms/' + k + 'm', 'wb') as f:
+        with open('outputs/roms/' + k + 'm', 'wb') as f:
             f.write(v)
     

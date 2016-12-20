@@ -17,6 +17,7 @@ def print_dirty_beret_logo():
              ['2F7FF', '2F830', '2F831', '2F832', '2F833', '2F834'],
              ['2F80F', '2F840', '2F841', '2F842', '2F843', '2F844'],
              ['2F815', '2F816', '2F817', '2F818', '2F819', 'blank']]
+
     #print(sorted(flatten_list(addrs)))
 
     tiles = image_to_tiles("inputs/tiles_to_write/temp_ass_edit.bmp", addrs)
