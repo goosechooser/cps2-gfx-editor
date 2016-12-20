@@ -3,3 +3,7 @@ outputs/
 .vscode/
 src/__pycache__
 gfx_joiner_bak.py
+*.bmp
+*.jpg
+lua/
+scripts/
