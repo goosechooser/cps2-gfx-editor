@@ -1,5 +1,5 @@
 from PIL import Image
-from tile_printer import process_tile_order, concat_tiles, make_tiles
+from tile_printer import process_tile_order, concat_arrays, make_tiles
 from tile_writer import image_to_tiles, flatten_list
 
 ADDRS = [['blank', '2F810', '2F811', '2F812', '2F813', '2F814'],
@@ -11,8 +11,9 @@ GFX = "inputs/tiles_to_write/vm3_14_16_18_20_final"
 TILES = make_tiles(GFX, ADDRS, 16)
 
 def test_image_to_tiles(tmpdir):
-    pic_array = process_tile_order(TILES)
-    image = Image.fromarray(concat_tiles(pic_array), 'P')
+    pic_tiles = process_tile_order(TILES)
+    pic_array = concat_arrays(pic_tiles)
+    image = Image.fromarray(pic_array, 'P')
     fn = tmpdir.mkdir('data').join('temp.bmp')
     image.save(str(fn))
 
