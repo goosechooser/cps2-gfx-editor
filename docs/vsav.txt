@@ -6,3 +6,37 @@ Vsav
 
 0x918000 Dark Force 16x16
 0x91C000 Dark Force Palette Bank
+
+Addr in mame - Palette Number
+00 - 0
+02 - 1
+04 - 2
+06 - 3
+08 - 4
+0A - 5
+0C - 6
+0E - 7
+10 - 8
+12 - 9
+14 - A
+16 - B
+18 - C
+1A - D
+1C - E
+1E - F
+20 - 10
+22 - 11
+24 - 12
+26 - 13
+28 - 14
+2A - 15
+2C - 16
+2E - 17
+30 - 18
+32 - 19
+34 - 1A
+36 - 1B
+38 - 1C
+3A - 1D
+3C - 1E
+3E - 1F
