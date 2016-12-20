@@ -1,6 +1,6 @@
 from PIL import Image
 import numpy as np
-from src import Tile
+from src import Tile, helper
 
 #TileWriter is currently responsible for:
 #read from bmp -> split to array(s) -> pack new data to tile(s)
@@ -13,7 +13,7 @@ def image_to_tiles(image, addresses):
     addr = flatten_list(addresses)
 
     tiles = []
-    filtered = [zipped for zipped in zip(addr, subtile_groups) if zipped[0] != 'blank']
+    filtered = [zipped for zipped in zip(addr, subtile_groups) if zipped[0] != 'BLANK']
 
     for tile in filtered:
         data = []
@@ -64,25 +64,6 @@ def _array_group_to_tile(subtiles):
             rows.extend(row)
     return rows
 
-#converts the addresses mame displays when you press 'F4' to something else
-def convert_mame_addr(mame_addr, tile_size):
-    tile_bytes = 0
-    addr = int(mame_addr, 16)
-    if tile_size == 8:
-        tile_bytes = 32
-    if tile_size == 16:
-        tile_bytes = 128
-
-    converted_addr = addr * tile_bytes
-    memory_bank_size = int('0x1000000', 16)
-
-    #currently the 8 eproms are split into 2 banks
-    #wouldnt need this if you combined the 2 bank files into 1 file
-    if converted_addr > memory_bank_size:
-        converted_addr -= memory_bank_size
-
-    return converted_addr
-
 def flatten_list(rolled_list):
     flat = [x for sublist in rolled_list for x in sublist]
     return flat
@@ -98,7 +79,7 @@ def write_tiles_to_gfx(tiles, gfx_file, output_file=None):
 
     with open(output_file, 'wb') as f:
         for tile in sorted_tiles:
-            converted_addr = convert_mame_addr(tile.address, tile.dimensions)
+            converted_addr = helper.convert_mame_addr(tile.address, tile.dimensions)
             read_length = converted_addr - gfx_reader.tell()
             print("tile address: " + str(tile.address))
             #print("converted addr: " + str(converted_addr))
