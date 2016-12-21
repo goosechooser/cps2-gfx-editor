@@ -12,8 +12,9 @@ class Sprite():
 
     def __repr__(self):
         addrs = [tile._tile_addr for tile in self._tiles]
-        loc = str(self._loc[0]) + " " + str(self._loc[1])
-        return "Contains tiles: " + str(addrs) + " Location: " + loc
+        loc = " Location: (" + str(self._loc[0]) + ", " + str(self._loc[1])
+        size = " Size: (" + str(self._size[0]) + ", " + str(self._size[1])
+        return "Sprite contains tiles: " + str(addrs) + loc + ")" + size + ")"
 
     @property
     def tiles(self):
@@ -81,6 +82,14 @@ class Sprite():
         image = Image.fromarray(self.toarray(), 'RGB')
         image.save(path_to_save + ".bmp")
 
+    def to2dlist(self):
+        list_2d = []
+        for i in range(self._size[1]):
+            offset = self._size[0] * i
+            list_2d.append(self._tiles[offset:offset + self._size[0]])
+
+        return list_2d
+
 class Factory:
     def __init__(self, sprite_file, tile_factory):
         self._sprite_file = sprite_file
@@ -94,7 +103,11 @@ class Factory:
         self._fp.close()
 
     def new(self):
-        spd = self._read_file()
+        formatted = self._format_line()
+        if formatted is 'EOF':
+            return 'EOF'
+
+        spd = self._read_file(formatted)
         tiles = []
 
         for i in range(spd['height']):
@@ -106,9 +119,7 @@ class Factory:
         size = (spd['width'], spd['height'])
         return Sprite(tiles, spd['palette'], loc, size)
 
-    def _read_file(self):
-        formatted = self._format_line()
-
+    def _read_file(self, formatted):
         tile_colors = []
         for color in formatted['palette'].split(" "):
             tile_colors.append(self._argb_to_rgb(color))
@@ -118,6 +129,8 @@ class Factory:
 
     def _format_line(self):
         line = self._fp.readline()
+        if not line:
+            return "EOF"
         strip_line = line.lstrip('{')
         strip_line = strip_line.rstrip(' }\n')
         properties = strip_line.split(", ")
