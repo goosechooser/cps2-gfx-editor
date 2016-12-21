@@ -14,7 +14,7 @@ class Tile():
         self._packed = packed
 
     def __repr__(self):
-        return "Address: " + str(self._tile_addr) + "\nDimension: " + str(self._tile_dimensions) + "\nData: " + str(self._tile_data) + ")"
+        return "Tile: " + str(self._tile_addr)
 
     @property
     def address(self):
