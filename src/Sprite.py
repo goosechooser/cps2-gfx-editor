@@ -4,15 +4,16 @@ import numpy as np
 
 #A sprite is a collection of tiles that use the same palette
 class Sprite():
-    def __init__(self, tiles, palette):
-        self._tiles = [None]
-        self._palette = None
-        self._loc = (0, 0)
-        self._size = (len(tiles), len(tiles[0]))
+    def __init__(self, tiles, palette, loc, size):
+        self._tiles = tiles
+        self._palette = palette
+        self._loc = loc
+        self._size = size
 
-    #def __repr__(self):
-    #    addrs = [tile for tile in self._tiles]
-    #    return "Contains tiles: " + str(len(addrs)) + " Location: " + #(self._loc)
+    def __repr__(self):
+        addrs = [tile._tile_addr for tile in self._tiles]
+        loc = str(self._loc[0]) + " " + str(self._loc[1])
+        return "Contains tiles: " + str(addrs) + " Location: " + loc
 
     @property
     def tiles(self):
@@ -79,3 +80,65 @@ class Sprite():
         """Returns a .bmp file"""
         image = Image.fromarray(self.toarray(), 'RGB')
         image.save(path_to_save + ".bmp")
+
+class Factory:
+    def __init__(self, sprite_file, tile_factory):
+        self._sprite_file = sprite_file
+        self._factory = tile_factory
+        self._fp = None
+
+    def open(self):
+        self._fp = open(self._sprite_file, 'r')
+
+    def close(self):
+        self._fp.close()
+
+    def new(self):
+        spd = self._read_file()
+        tiles = []
+
+        for i in range(spd['height']):
+            for j in range(spd['width']):
+                offset = i * 0x10 + j * 0x1
+                tiles.append(self._factory.new(hex(spd['tile_number'] + offset), 16))
+
+        loc = (spd['x'], spd['y'])
+        size = (spd['width'], spd['height'])
+        return Sprite(tiles, spd['palette'], loc, size)
+
+    def _read_file(self):
+        formatted = self._format_line()
+
+        tile_colors = []
+        for color in formatted['palette'].split(" "):
+            tile_colors.append(self._argb_to_rgb(color))
+        formatted['palette'] = tile_colors
+
+        return formatted
+
+    def _format_line(self):
+        line = self._fp.readline()
+        strip_line = line.lstrip('{')
+        strip_line = strip_line.rstrip(' }\n')
+        properties = strip_line.split(", ")
+        line_properties = dict()
+        for prop in properties:
+            stripped = prop.split(" = ")
+            key = stripped[0].lstrip(' ')
+            value = stripped[1]
+
+            if key == 'tile_number':
+                line_properties[key] = int(value, 16)
+
+            elif key != 'palette':
+                line_properties[key] = int(value)
+            else:
+                line_properties[key] = value
+
+        del line_properties['pal_number']
+        return line_properties
+
+    def _argb_to_rgb(self, color):
+        return bytes.fromhex(color[1] * 2 + color[2] * 2 + color[3] * 2)
+
+

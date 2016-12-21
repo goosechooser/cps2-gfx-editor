@@ -205,16 +205,15 @@ class EmptyTile(Tile):
 
         return np.array(tile)
 
-class TileFactory:
+class Factory:
     def __init__(self, gfx_file):
         self._graphics_file = gfx_file
         self._fp = None
 
-    def __enter__(self):
+    def open(self):
         self._fp = open(self._graphics_file, 'rb')
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        print("__exit__")
+    def close(self):
         self._fp.close()
 
     def new(self, addr, tile_size):
