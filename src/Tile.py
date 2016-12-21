@@ -1,6 +1,7 @@
 from struct import Struct, iter_unpack
 from PIL import Image
 import numpy as np
+from src import helper
 
 class Tile():
     def __init__(self, addr, data, dimensions=16, packed=True):
@@ -203,4 +204,23 @@ class EmptyTile(Tile):
         tile = [row] * self._tile_dimensions
 
         return np.array(tile)
+
+class TileFactory:
+    def __init__(self, gfx_file):
+        self._graphics_file = gfx_file
+        self._fp = None
+
+    def __enter__(self):
+        self._fp = open(self._graphics_file, 'rb')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        print("__exit__")
+        self._fp.close()
+
+    def new(self, addr, tile_size):
+        self._fp.seek(helper.convert_mame_addr(addr, tile_size))
+        if tile_size == 8:
+            return Tile(addr, self._fp.read(32), tile_size)
+        if tile_size == 16:
+            return Tile(addr, self._fp.read(128), tile_size)
 
