@@ -64,14 +64,17 @@ class Sprite():
         #tile.toarray()
         #color(blahblahblah)
         pic_array = []
-        for row in self._tiles:
+
+        tiles = self._tiles2d()
+        for tile_row in tiles:
             row = []
-            for tile in row:
+            for tile in tile_row:
                 interleaved_tile = tile.interleave_subtiles()
                 tile_fmt = interleaved_tile.dimensions * 'c'
                 tile_iter = iter_unpack(tile_fmt, interleaved_tile.unpack())
-                tiles = [subtile for subtile in tile_iter]
-                row.append(self._colortile(tiles))
+                subtiles = [subtile for subtile in tile_iter]
+
+                row.append(self._colortile(subtiles))
 
             pic_array.append(row)
 
@@ -79,16 +82,36 @@ class Sprite():
 
     def tobmp(self, path_to_save):
         """Returns a .bmp file"""
-        image = Image.fromarray(self.toarray(), 'RGB')
+        concat = self._concat_arrays(self.toarray())
+        image = Image.fromarray(concat, 'RGB')
+        
         image.save(path_to_save + ".bmp")
 
-    def to2dlist(self):
+    def topng(self, path_to_save):
+        """Returns a .bmp file"""
+        concat = self._concat_arrays(self.toarray())
+        image = Image.fromarray(concat, 'RGB')
+        image.save(path_to_save + ".png")
+
+    def _tiles2d(self):
         list_2d = []
         for i in range(self._size[1]):
             offset = self._size[0] * i
             list_2d.append(self._tiles[offset:offset + self._size[0]])
 
         return list_2d
+
+    def _concat_arrays(self, arrays):
+        """Concatenates a 2D list of arrays into one array.
+
+        Returns an array.
+        """
+        array_rows = []
+        for row in arrays:
+            array_rows.append(np.concatenate(row, axis=1))
+        assembled = np.concatenate(array_rows, axis=0)
+
+        return assembled
 
 class Factory:
     def __init__(self, sprite_file, tile_factory):
