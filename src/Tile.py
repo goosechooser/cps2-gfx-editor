@@ -96,7 +96,7 @@ class Tile():
         for loc in range(0, 8):
             masked = [value & mask for value in bitplane_values]
             bitplane_values = [value >> 1 for value in bitplane_values]
-            bit_plane_val = masked[0] << 3 | masked[1] << 2 | masked[2] << 1 | masked[3]
+            bit_plane_val = masked[3] << 3 | masked[2] << 2 | masked[1] << 1 | masked[0]
             row_of_pixels.append(bit_plane_val.to_bytes(1, byteorder='big'))
 
         row_of_pixels.reverse()
@@ -133,7 +133,6 @@ class Tile():
                 bitplanes[i] = (plane << 1) | (pixel & mask)
                 pixel = pixel >> 1
 
-        bitplanes.reverse()
         return bytearray(bitplanes)
 
     def toarray(self):
