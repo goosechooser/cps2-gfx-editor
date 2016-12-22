@@ -22,6 +22,3 @@ def test_image_to_tiles(tmpdir):
 
     for tile_pair in zip(filtered_original, test_tiles):
         assert tile_pair[0].data == tile_pair[1].data
-
-
-

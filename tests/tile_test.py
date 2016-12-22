@@ -12,13 +12,13 @@ def test_unpack_tile1():
     tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA), '8')
 
     for row in ROW_FMT.iter_unpack(tile.unpack()):
-        assert bytearray(b''.join(row)).hex() == '0f0f0f0f0001060a'
+        assert bytearray(b''.join(row)).hex() == '0f0f0f0f00080605'
 
 def test_unpack_tile2():
     tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA16), '16')
 
     for row in ROW_FMT.iter_unpack(tile.unpack()):
-        assert bytearray(b''.join(row)).hex() == '0f0f0f0f0001060a'
+        assert bytearray(b''.join(row)).hex() == '0f0f0f0f00080605'
 
 def test_pack_data1():
     tile = Tile.Tile(TEST_ADDR, bytearray.fromhex(TEST_DATA), '8')
@@ -51,3 +51,4 @@ def test_interleave_subtiles():
 
 if __name__ == "__main__":
     print("sup")
+    
