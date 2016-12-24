@@ -7,7 +7,7 @@ from src import Tile, helper
 #Eventually should refactor this so that everything returns bytes
 
 
-def to_bytes(image, palette):
+def tobytes(image, palette):
     """Converts an image of modes 'P' or 'RGB' to bytes().
 
     Returns bytes().
