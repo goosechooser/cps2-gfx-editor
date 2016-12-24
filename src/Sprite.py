@@ -83,7 +83,7 @@ class Sprite(object):
         #color(blahblahblah)
         pic_array = []
 
-        tiles = self._tiles2d()
+        tiles = self.tiles2d()
         for tile_row in tiles:
             row = []
             for tile in tile_row:
@@ -96,17 +96,22 @@ class Sprite(object):
 
             pic_array.append(row)
 
-        return np.array(pic_array)
+        array_rows = []
+        for row in np.array(pic_array):
+            array_rows.append(np.concatenate(row, axis=1))
+        assembled = np.concatenate(array_rows, axis=0)
+
+        return assembled
 
     def tobmp(self, path_to_save):
         """Returns a .bmp file"""
-        concat = self._concat_arrays(self.toarray())
+        concat = self.toarray()
         image = Image.fromarray(concat, 'RGB')
         image.save(path_to_save + ".bmp")
 
     def topng(self, path_to_save):
         """Returns a .png file"""
-        concat = self._concat_arrays(self.toarray())
+        concat = self.toarray()
         image = Image.fromarray(concat, 'RGB')
         image.save(path_to_save + ".png")
 
@@ -126,17 +131,7 @@ class Sprite(object):
 
         return list_2d
 
-    def _concat_arrays(self, arrays):
-        """Concatenates a 2D list of arrays into one array.
-
-        Returns an array.
-        """
-        array_rows = []
-        for row in arrays:
-            array_rows.append(np.concatenate(row, axis=1))
-        assembled = np.concatenate(array_rows, axis=0)
-
-        return assembled
+    
 
 # Factories
 def fromdict(dict_):
