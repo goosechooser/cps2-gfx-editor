@@ -1,20 +1,32 @@
-from struct import iter_unpack
+import struct
 from PIL import Image
 import numpy as np
+np.set_printoptions(threshold=np.inf)
+
+from src import Tile
 
 #A sprite is a collection of tiles that use the same palette
-class Sprite():
-    def __init__(self, tiles, palette, loc, size):
+class Sprite(object):
+    def __init__(self, base_tile, tiles, palette, loc, size):
+        self._base_tile = base_tile
         self._tiles = tiles
         self._palette = palette
         self._loc = loc
         self._size = size
 
     def __repr__(self):
-        addrs = [tile._tile_addr for tile in self._tiles]
+        addrs = [tile._tile_addr for tile in self._tiles if tile]
         loc = " Location: (" + str(self._loc[0]) + ", " + str(self._loc[1])
         size = " Size: (" + str(self._size[0]) + ", " + str(self._size[1])
         return "Sprite contains tiles: " + str(addrs) + loc + ")" + size + ")"
+
+    @property
+    def base_tile(self):
+        return self._base_tile
+
+    @base_tile.setter
+    def base_tile(self, value):
+        self._base_tile = value
 
     @property
     def tiles(self):
@@ -44,6 +56,12 @@ class Sprite():
     def size(self):
         return self._size
 
+    def height(self):
+        return self._size[1]
+
+    def width(self):
+        return self._size[0]
+
     def _colortile(self, subtiles):
         color_tile = []
         for row in subtiles:
@@ -71,7 +89,7 @@ class Sprite():
             for tile in tile_row:
                 interleaved_tile = tile.interleave_subtiles()
                 tile_fmt = interleaved_tile.dimensions * 'c'
-                tile_iter = iter_unpack(tile_fmt, interleaved_tile.unpack())
+                tile_iter = struct.iter_unpack(tile_fmt, interleaved_tile.unpack())
                 subtiles = [subtile for subtile in tile_iter]
 
                 row.append(self._colortile(subtiles))
@@ -84,20 +102,27 @@ class Sprite():
         """Returns a .bmp file"""
         concat = self._concat_arrays(self.toarray())
         image = Image.fromarray(concat, 'RGB')
-        
         image.save(path_to_save + ".bmp")
 
     def topng(self, path_to_save):
-        """Returns a .bmp file"""
+        """Returns a .png file"""
         concat = self._concat_arrays(self.toarray())
         image = Image.fromarray(concat, 'RGB')
         image.save(path_to_save + ".png")
 
-    def _tiles2d(self):
+    def tiles2d(self):
         list_2d = []
         for i in range(self._size[1]):
             offset = self._size[0] * i
             list_2d.append(self._tiles[offset:offset + self._size[0]])
+
+        return list_2d
+
+    def addrs2d(self):
+        list_2d = []
+        for i in range(self._size[1]):
+            offset = self._size[0] * i
+            list_2d.append([tile.address for tile in self._tiles[offset:offset + self._size[0]]])
 
         return list_2d
 
@@ -113,68 +138,26 @@ class Sprite():
 
         return assembled
 
-class Factory:
-    def __init__(self, sprite_file, tile_factory):
-        self._sprite_file = sprite_file
-        self._factory = tile_factory
-        self._fp = None
+# Factories
+def fromdict(dict_):
+    """Returns a Sprite object with empty tiles property."""
+    palette = [_argb_to_rgb(color) for color in dict_['palette']]
 
-    def open(self):
-        self._fp = open(self._sprite_file, 'r')
+    sprite = dict_['sprite']
+    tile_number = int(sprite['tile_number'], 16)
 
-    def close(self):
-        self._fp.close()
+    size = (int(sprite['width']), int(sprite['height']))
+    loc = (int(sprite['x']), int(sprite['y']))
 
-    def new(self):
-        formatted = self._format_line()
-        if formatted is 'EOF':
-            return 'EOF'
+    tiles = []
+    for i in range(size[1]):
+        for j in range(size[0]):
+            offset = i * 0x10 + j * 0x1
+            addr = str(hex(tile_number + offset))
+            #unpack_data = struct.unpack_from(unpack_fmt, data, )
+            tiles.append(Tile.Tile(addr, None))
 
-        spd = self._read_file(formatted)
-        tiles = []
+    return Sprite(tile_number, tiles, palette, loc, size)
 
-        for i in range(spd['height']):
-            for j in range(spd['width']):
-                offset = i * 0x10 + j * 0x1
-                tiles.append(self._factory.new(hex(spd['tile_number'] + offset), 16))
-
-        loc = (spd['x'], spd['y'])
-        size = (spd['width'], spd['height'])
-        return Sprite(tiles, spd['palette'], loc, size)
-
-    def _read_file(self, formatted):
-        tile_colors = []
-        for color in formatted['palette'].split(" "):
-            tile_colors.append(self._argb_to_rgb(color))
-        formatted['palette'] = tile_colors
-
-        return formatted
-
-    def _format_line(self):
-        line = self._fp.readline()
-        if not line:
-            return "EOF"
-        strip_line = line.lstrip('{')
-        strip_line = strip_line.rstrip(' }\n')
-        properties = strip_line.split(", ")
-        line_properties = dict()
-        for prop in properties:
-            stripped = prop.split(" = ")
-            key = stripped[0].lstrip(' ')
-            value = stripped[1]
-
-            if key == 'tile_number':
-                line_properties[key] = int(value, 16)
-
-            elif key != 'palette':
-                line_properties[key] = int(value)
-            else:
-                line_properties[key] = value
-
-        del line_properties['pal_number']
-        return line_properties
-
-    def _argb_to_rgb(self, color):
-        return bytes.fromhex(color[1] * 2 + color[2] * 2 + color[3] * 2)
-
-
+def _argb_to_rgb(color):
+    return bytes.fromhex(color[1] * 2 + color[2] * 2 + color[3] * 2)
