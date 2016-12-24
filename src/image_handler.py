@@ -1,13 +1,19 @@
 import struct
-from PIL import Image, PngImagePlugin
+from PIL import Image
 import numpy as np
-from src import Sprite, Tile, helper
+from src import Tile, helper
 
-def to_sprites(image, palette):
+#Responsible for handling images.
+#Eventually should refactor this so that everything returns bytes
+
+
+def to_bytes(image, palette):
+    """Converts an image of modes 'P' or 'RGB' to bytes().
+
+    Returns bytes().
+    """
     array_ = _read_img(image, palette)
-    print(array_)
-    #colorless tiles can be piped to tile_writer.image_to_tile
-    print(array_.tolist())
+    return bytes(array_.tolist())
 
 def to_tiles(image, addresses):
     image_array = _read_img(image)
