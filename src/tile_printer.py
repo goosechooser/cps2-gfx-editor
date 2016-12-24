@@ -19,7 +19,7 @@ from src import Tile, helper
 
 def make_tiles(gfx_file, addresses, tile_dim=16):
     """Given a list of addresses and tile dimensions (8 or 16),
-    reads from the provided graphics file and creates Tile object(s).abs
+    reads from the provided graphics file and creates Tile object(s).
 
     Returns either a list of Tiles or a list of lists of Tiles.
     """
