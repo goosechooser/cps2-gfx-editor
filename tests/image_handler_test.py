@@ -1,4 +1,4 @@
-from src import tile_writer, tile_printer
+from src import tile_printer, image_handler, helper
 from PIL import Image
 
 ADDRS = [['BLANK', '2F810', '2F811', '2F812', '2F813', '2F814'],
@@ -16,8 +16,8 @@ def test_image_to_tiles(tmpdir):
     fn = tmpdir.mkdir('data').join('temp.bmp')
     image.save(str(fn))
 
-    test_tiles = tile_writer.image_to_tiles(str(fn), ADDRS)
-    original_tiles = tile_writer.flatten_list(TILES)
+    test_tiles = image_handler.to_tiles(str(fn), ADDRS)
+    original_tiles = helper.flatten_list(TILES)
     filtered_original = [tile for tile in original_tiles if tile.address != 'BLANK']
 
     for tile_pair in zip(filtered_original, test_tiles):

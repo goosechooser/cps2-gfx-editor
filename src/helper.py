@@ -25,3 +25,11 @@ def convert_mame_addr(mame_addr, tile_size):
         converted_addr -= memory_bank_size
 
     return converted_addr
+
+def flatten_list(rolled_list):
+    """Turns a list of lists into just a list.
+    
+    Returns list.
+    """
+    flat = [x for sublist in rolled_list for x in sublist]
+    return flat

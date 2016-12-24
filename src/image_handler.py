@@ -1,0 +1,84 @@
+import struct
+from PIL import Image, PngImagePlugin
+import numpy as np
+from src import Sprite, Tile, helper
+
+def to_sprites(image, palette):
+    array_ = _read_img(image, palette)
+    print(array_)
+    #colorless tiles can be piped to tile_writer.image_to_tile
+    print(array_.tolist())
+
+def to_tiles(image, addresses):
+    image_array = _read_img(image)
+    tiles_array = _split_array(image_array)
+
+    addr = helper.flatten_list(addresses)
+
+    filtered = [zipped for zipped in zip(addr, tiles_array) if zipped[0] != 'BLANK']
+
+    tiles = []
+    for tile in filtered:
+        data = []
+        data = _to_tile(tile[1])
+        tile_ = Tile.Tile(tile[0], bytes(data), 16, packed=False)
+        tiles.append(tile_.deinterleave_subtiles())
+
+    return tiles
+
+def _read_img(img, palette=None):
+    im = Image.open(img)
+    if palette:
+        pd = _pal_to_dict(palette)
+        cond = [_strip_palette(pix, pd) for pix in _condense(im)]
+        return np.asarray(cond, dtype='>H')
+
+    return np.asarray(im, dtype='>H')
+
+def _condense(img):
+    """PNG image is returned as 3 bands representing RGB on each plane.
+    Flattens into 1 plane array with each (R,G,B) value represented as RGB.
+
+    """
+    im = [band.tobytes() for band in img.split()]
+    band_fmt = 'c'
+    band_iter = [struct.iter_unpack(band_fmt, split_im) for split_im in im]
+    comb = []
+
+    for val in band_iter[0]:
+        val_2 = next(band_iter[1])
+        val_3 = next(band_iter[2])
+        comb.append(b''.join([*val, *val_2, *val_3]))
+
+    return comb
+
+def _strip_palette(pixel, pal_dict):
+    return pal_dict[pixel]
+
+def _pal_to_dict(palette):
+    pd = {}
+    for i, v in enumerate(palette):
+        pd[v] = i
+    return pd
+
+#Splits image into 16x16 tiles
+def _split_array(image):
+    """Splits an image into 16x16 sized tiles.
+
+    Returns a list of arrays.
+    """
+    tiles = []
+    dims = image.shape
+    split_image = np.vsplit(image, int(dims[0]/16))
+    for tile in split_image:
+        tiles.extend(np.hsplit(tile, int(dims[1]/16)))
+    return tiles
+
+#Currently for 16x16 tiles only
+def _to_tile(array_):
+    rows = []
+
+    for row in array_.tolist():
+        rows.extend(row)
+    return rows
+
