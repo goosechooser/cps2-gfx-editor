@@ -32,13 +32,14 @@ def print_sprites(sprites, path):
     print("done printing")
 
 def write_sprites_test(sprite, image):
-    print(image_handler.tobytes(image, sprite.palette))
-    return
-
+    tiles = image_handler.to_tiles(image, sprite.addrs2d(), sprite.palette)
+    print(tiles)
+    sprite.tiles = tiles
+    sprite.topng("outputs/sprites/0x1abaa_test")
 
 if __name__ == "__main__":
     sprites = do_it(GFX_FILE, TILE_FILE)
     print_sprites(sprites, "outputs/sprites/")
     write_sprites_test(sprites[10], "outputs/sprites/0x1abaa.png")
-    
+
 
