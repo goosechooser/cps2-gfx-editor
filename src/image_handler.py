@@ -4,19 +4,13 @@ import numpy as np
 from src import Tile, helper
 
 #Responsible for handling images.
-#Eventually should refactor this so that everything returns bytes
 
+def to_tiles(image, addresses, palette=None):
+    """Converts an image into a list of tiles.
 
-def tobytes(image, palette):
-    """Converts an image of modes 'P' or 'RGB' to bytes().
-
-    Returns bytes().
+    Returns a list.
     """
-    array_ = _read_img(image, palette)
-    return bytes(array_.tolist())
-
-def to_tiles(image, addresses):
-    image_array = _read_img(image)
+    image_array = _read_img(image, palette)
     tiles_array = _split_array(image_array)
 
     addr = helper.flatten_list(addresses)
@@ -37,7 +31,13 @@ def _read_img(img, palette=None):
     if palette:
         pd = _pal_to_dict(palette)
         cond = [_strip_palette(pix, pd) for pix in _condense(im)]
-        return np.asarray(cond, dtype='>H')
+
+        cond2d = []
+        for i in range(im.height):
+            offset = im.width * i
+            cond2d.append(cond[offset:offset + im.width])
+
+        return np.asarray(cond2d, dtype='>H')
 
     return np.asarray(im, dtype='>H')
 
@@ -73,6 +73,7 @@ def _split_array(image):
 
     Returns a list of arrays.
     """
+
     tiles = []
     dims = image.shape
     split_image = np.vsplit(image, int(dims[0]/16))
@@ -83,7 +84,6 @@ def _split_array(image):
 #Currently for 16x16 tiles only
 def _to_tile(array_):
     rows = []
-
     for row in array_.tolist():
         rows.extend(row)
     return rows
