@@ -31,23 +31,14 @@ def print_sprites(sprites, path):
 
     print("done printing")
 
-#works yeee
-def jsonpickle_test(sprites, output):
-    with open(output, 'w') as f:
-        for sprite in sprites:
-            print(sprite)
-            encode = jsonpickle.encode(sprite)
-            f.write(encode + "\n")
-
-    with open(output, 'r') as f:
-        for line in f:
-            decode = jsonpickle.decode(line)
-            print(type(decode))
-            print(decode)
-
+def write_sprites_test(sprite, image):
+    print(image_handler.tobytes(image, sprite.palette))
+    return
 
 
 if __name__ == "__main__":
     sprites = do_it(GFX_FILE, TILE_FILE)
     print_sprites(sprites, "outputs/sprites/")
+    write_sprites_test(sprites[10], "outputs/sprites/0x1abaa.png")
+    
 
