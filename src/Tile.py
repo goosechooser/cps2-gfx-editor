@@ -1,7 +1,6 @@
 from struct import Struct, iter_unpack
 from PIL import Image
 import numpy as np
-from src import helper
 
 class Tile(object):
     def __init__(self, addr, data, dimensions=16, packed=True):
