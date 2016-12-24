@@ -15,7 +15,7 @@ class Sprite(object):
         self._size = size
 
     def __repr__(self):
-        addrs = [tile._tile_addr for tile in self._tiles if tile]
+        addrs = [tile.address for tile in self._tiles if tile]
         loc = " Location: (" + str(self._loc[0]) + ", " + str(self._loc[1])
         size = " Size: (" + str(self._size[0]) + ", " + str(self._size[1])
         return "Sprite contains tiles: " + str(addrs) + loc + ")" + size + ")"
@@ -78,9 +78,6 @@ class Sprite(object):
 
         Returns an array.
         """
-        #figure out way to fill in values for array and you can have
-        #tile.toarray()
-        #color(blahblahblah)
         pic_array = []
 
         tiles = self.tiles2d()
@@ -116,6 +113,7 @@ class Sprite(object):
         image.save(path_to_save + ".png")
 
     def tiles2d(self):
+        """Returns a list of lists containing the Sprite's tiles."""
         list_2d = []
         for i in range(self._size[1]):
             offset = self._size[0] * i
@@ -124,6 +122,7 @@ class Sprite(object):
         return list_2d
 
     def addrs2d(self):
+        """Returns a list of lists containing the tiles' addresses."""
         list_2d = []
         for i in range(self._size[1]):
             offset = self._size[0] * i
@@ -131,16 +130,13 @@ class Sprite(object):
 
         return list_2d
 
-    
-
 # Factories
 def fromdict(dict_):
     """Returns a Sprite object with empty tiles property."""
     palette = [_argb_to_rgb(color) for color in dict_['palette']]
-
     sprite = dict_['sprite']
-    tile_number = int(sprite['tile_number'], 16)
 
+    tile_number = int(sprite['tile_number'], 16)
     size = (int(sprite['width']), int(sprite['height']))
     loc = (int(sprite['x']), int(sprite['y']))
 
@@ -149,10 +145,13 @@ def fromdict(dict_):
         for j in range(size[0]):
             offset = i * 0x10 + j * 0x1
             addr = str(hex(tile_number + offset))
-            #unpack_data = struct.unpack_from(unpack_fmt, data, )
             tiles.append(Tile.Tile(addr, None))
 
     return Sprite(tile_number, tiles, palette, loc, size)
 
 def _argb_to_rgb(color):
+    """Converts the 2 byte ARGB format the cps2 uses.
+    
+    Returns a bytes() of 3 byte RGB.
+    """
     return bytes.fromhex(color[1] * 2 + color[2] * 2 + color[3] * 2)
