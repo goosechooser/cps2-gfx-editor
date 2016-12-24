@@ -226,22 +226,3 @@ class EmptyTile(Tile):
         tile = [row] * self._tile_dimensions
 
         return np.array(tile)
-
-class Factory:
-    def __init__(self, gfx_file):
-        self._graphics_file = gfx_file
-        self._fp = None
-
-    def open(self):
-        self._fp = open(self._graphics_file, 'rb')
-
-    def close(self):
-        self._fp.close()
-
-    def new(self, addr, tile_size):
-        self._fp.seek(helper.convert_mame_addr(addr, tile_size))
-        if tile_size == 8:
-            return Tile(addr, self._fp.read(32), tile_size)
-        if tile_size == 16:
-            return Tile(addr, self._fp.read(128), tile_size)
-
