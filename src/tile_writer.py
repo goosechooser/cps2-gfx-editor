@@ -9,16 +9,16 @@ def image_to_tiles(image, addresses):
     image_array = _read_image(image)
     tiles_array = _split_array(image_array)
 
-    subtile_groups = [_deinterleave_tile_array(tile_array) for tile_array in tiles_array]
     addr = flatten_list(addresses)
 
-    tiles = []
-    filtered = [zipped for zipped in zip(addr, subtile_groups) if zipped[0] != 'BLANK']
+    filtered = [zipped for zipped in zip(addr, tiles_array) if zipped[0] != 'BLANK']
 
+    tiles = []
     for tile in filtered:
         data = []
-        data = _array_group_to_tile(tile[1])
-        tiles.append(Tile.Tile(tile[0], bytes(data), 16, packed=False))
+        data = _to_tile(tile[1])
+        tile_ = Tile.Tile(tile[0], bytes(data), 16, packed=False)
+        tiles.append(tile_.deinterleave_subtiles())
 
     return tiles
 
@@ -43,25 +43,12 @@ def _split_array(image):
         tiles.extend(np.hsplit(tile, int(dims[1]/16)))
     return tiles
 
-def _deinterleave_tile_array(tile_array):
-    """Deinterleaves the array representing a 16x16 tile.
-
-    Returns a list of arrays.
-    """
-    temp_tiles = []
-    split_tiles = np.vsplit(tile_array, 2)
-
-    for half in split_tiles:
-        temp_tiles.extend(np.hsplit(half, 2))
-
-    return [temp_tiles[0], temp_tiles[2], temp_tiles[1], temp_tiles[3]]
-
 #Currently for 16x16 tiles only
-def _array_group_to_tile(subtiles):
+def _to_tile(array_):
     rows = []
-    for sub in subtiles:
-        for row in sub.tolist():
-            rows.extend(row)
+
+    for row in array_.tolist():
+        rows.extend(row)
     return rows
 
 def flatten_list(rolled_list):

@@ -3,7 +3,7 @@ from PIL import Image
 import numpy as np
 from src import helper
 
-class Tile():
+class Tile(object):
     def __init__(self, addr, data, dimensions=16, packed=True):
         self._tile_addr = addr
         if packed:
@@ -160,7 +160,7 @@ class Tile():
     def interleave_subtiles(self):
         """Row interleaves the 4 8x8 subtiles in a 16x16 tile.
 
-        Returns bytes().
+        Returns a new packed Tile.
         """
         tile_fmt = Struct(32 * 'c')
         tile_iter = tile_fmt.iter_unpack(self._tile_data)
@@ -191,6 +191,29 @@ class Tile():
             interleaved.extend([*i, *right_next])
 
         return interleaved
+
+    def deinterleave_subtiles(self):
+        tile_fmt = Struct(64 * 'c')
+        tile_iter = tile_fmt.iter_unpack(self._tile_data)
+
+        subtiles = []
+        for subtile in tile_iter:
+            subtiles.extend(self._deinterleave(b''.join(subtile)))
+
+        deinterleaved = [subtiles[0], subtiles[2], subtiles[1], subtiles[3]]
+        return Tile(self._tile_addr, b''.join(deinterleaved), self._tile_dimensions)
+
+    def _deinterleave(self, data):
+        deinterleaved = [[], []]
+
+        deinterleave_fmt = Struct(4 * 'c')
+        deinterleave_iter = deinterleave_fmt.iter_unpack(data)
+
+        for i in deinterleave_iter:
+            deinterleaved[0].extend([*i])
+            deinterleaved[1].extend([*next(deinterleave_iter)])
+
+        return [b''.join(data) for data in deinterleaved]
 
 class EmptyTile(Tile):
 
