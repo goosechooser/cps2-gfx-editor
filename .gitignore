@@ -6,5 +6,5 @@ gfx_joiner_bak.py
 *.bmp
 *.jpg
 lua/
-scripts/
+scripts/*.ps1
 *egg-info
