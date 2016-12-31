@@ -133,12 +133,11 @@ class Sprite(object):
 # Factories
 def fromdict(dict_):
     """Returns a Sprite object with empty tiles property."""
-    palette = [_argb_to_rgb(color) for color in dict_['palette']]
-    sprite = dict_['sprite']
+    palette = [_argb_to_rgb(color[2:]) for color in dict_['palette']]
 
-    tile_number = int(sprite['tile_number'], 16)
-    size = (int(sprite['width']), int(sprite['height']))
-    loc = (int(sprite['x']), int(sprite['y']))
+    tile_number = int(dict_['tile_number'], 16)
+    size = (int(dict_['width']), int(dict_['height']))
+    loc = (int(dict_['x']), int(dict_['y']))
 
     tiles = []
     for i in range(size[1]):
@@ -147,11 +146,13 @@ def fromdict(dict_):
             addr = str(hex(tile_number + offset))
             tiles.append(Tile.Tile(addr, None))
 
-    return Sprite(tile_number, tiles, palette, loc, size)
+    return Sprite(hex(tile_number), tiles, palette, loc, size)
 
 def _argb_to_rgb(color):
     """Converts the 2 byte ARGB format the cps2 uses.
     
     Returns a bytes() of 3 byte RGB.
     """
+    if len(color) < 4:
+        color = (4 - len(color)) * '0' + color
     return bytes.fromhex(color[1] * 2 + color[2] * 2 + color[3] * 2)
