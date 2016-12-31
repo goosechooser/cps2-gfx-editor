@@ -4,7 +4,7 @@ import jsonpickle
 from src import tile_printer, Sprite, Tile, image_handler, helper
 
 GFX_FILE = "inputs/refactor/vm3.13.15.17.19.final"
-TILE_FILE = "inputs/tile_info_json.txt"
+TILE_FILE = "inputs/op_info_json.txt"
 
 def do_it(gfx_file, tile_file):
     dicts = fromlua(tile_file)
@@ -31,15 +31,32 @@ def print_sprites(sprites, path):
 
     print("done printing")
 
-def write_sprites_test(sprite, image):
+def write_sprites(sprite, image):
     tiles = image_handler.to_tiles(image, sprite.addrs2d(), sprite.palette)
-    print(tiles)
     sprite.tiles = tiles
     sprite.topng("outputs/sprites/0x1abaa_test")
 
+def stitch_sprites(sprites, output):
+    tiles = []
+    for sprite in sprites:
+        tiles.append([sprite.toarray()])
+
+    concat = tile_printer.concat_arrays(tiles)
+    image = Image.fromarray(concat, 'RGB')
+    image.save(output + ".png")
+
+def put_sprites(sprites, output):
+    canvas = Image.new('RGB', (1024, 1024))
+    for sprite in sprites:
+        im = Image.fromarray(sprite.toarray(), 'RGB')
+        canvas.paste(im, sprite.location)
+    canvas.save(output + ".png")
+
 if __name__ == "__main__":
     sprites = do_it(GFX_FILE, TILE_FILE)
-    print_sprites(sprites, "outputs/sprites/")
-    write_sprites_test(sprites[10], "outputs/sprites/0x1abaa.png")
+    #stitch_sprites(sprites, "outputs/temp")
+    #print_sprites(sprites, "outputs/sprites/")
+    #put_sprites(sprites,"outputs/put_test")
+    #write_sprites(sprites[10], "outputs/sprites/0x1abaa.png")
 
 

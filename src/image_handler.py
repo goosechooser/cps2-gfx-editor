@@ -4,6 +4,7 @@ import numpy as np
 from src import Tile, helper
 
 #Responsible for handling images.
+#ie image -> tiles
 
 def to_tiles(image, addresses, palette=None):
     """Converts an image into a list of tiles.
