@@ -138,6 +138,8 @@ def fromdict(dict_):
     tile_number = int(dict_['tile_number'], 16)
     size = (int(dict_['width']), int(dict_['height']))
     loc = (int(dict_['x']), int(dict_['y']))
+    if int(dict_['offset']) is 0:
+        loc = (loc[0] - 64, loc[1] - 16)
 
     tiles = []
     for i in range(size[1]):
@@ -145,7 +147,7 @@ def fromdict(dict_):
             offset = i * 0x10 + j * 0x1
             addr = str(hex(tile_number + offset))
             tiles.append(Tile.Tile(addr, None))
-
+            
     return Sprite(hex(tile_number), tiles, palette, loc, size)
 
 def _argb_to_rgb(color):
