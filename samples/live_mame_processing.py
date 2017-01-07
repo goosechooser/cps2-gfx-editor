@@ -86,7 +86,6 @@ async def main(p, folder):
                     f.write(jsonpickle.encode(res) + "\n")
 
 if __name__ == "__main__":
-    coroutine_temp()
     os.chdir(MAME_PATH)
     cmd = ["mame64", "vsav", "-autoboot_script", LUA_SCRIPT, "-window", "-nomax"]
 
@@ -98,4 +97,3 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main(p, SPRITE_OUTPUT_FOLDER))
     loop.close()
-    
