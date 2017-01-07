@@ -30,7 +30,7 @@ def make_tiles(gfx_file, addresses, tile_dim=16):
                 row = []
                 for tile_addr in row_of_addresses:
                     if tile_addr.upper() != 'BLANK':
-                        f.seek(helper.convert_mame_addr(tile_addr, tile_dim))
+                        f.seek(helper.convert_mame_addr(tile_addr, tile_dim,split=False))
                         if tile_dim == 8:
                             read_data = f.read(32)
                         if tile_dim == 16:
@@ -50,6 +50,43 @@ def make_tiles(gfx_file, addresses, tile_dim=16):
                     tiles.append(Tile.Tile(tile_addr, read_data, tile_dim))
                 else:
                     tiles.append(Tile.EmptyTile(16))
+
+    return tiles
+
+def make_tiles_mmap(mapped, addresses, tile_dim=16):
+    """Given a list of addresses and tile dimensions (8 or 16),
+    reads from the provided graphics file and creates Tile object(s).
+
+    Returns either a list of Tiles or a list of lists of Tiles.
+    """
+    tiles = []
+    f = mapped
+
+    if any(isinstance(el, list) for el in addresses):
+        for row_of_addresses in addresses:
+            row = []
+            for tile_addr in row_of_addresses:
+                if tile_addr.upper() != 'BLANK':
+                    f.seek(helper.convert_mame_addr(tile_addr, tile_dim,split=False))
+                    if tile_dim == 8:
+                        read_data = f.read(32)
+                    if tile_dim == 16:
+                        read_data = f.read(128)
+                    row.append(Tile.Tile(tile_addr, read_data, tile_dim))
+                else:
+                    row.append(Tile.EmptyTile(16))
+            tiles.append(row)
+    else:
+        for tile_addr in addresses:
+            if tile_addr.upper() != 'BLANK':
+                f.seek(helper.convert_mame_addr(tile_addr, tile_dim))
+                if tile_dim == 8:
+                    read_data = f.read(32)
+                if tile_dim == 16:
+                    read_data = f.read(128)
+                tiles.append(Tile.Tile(tile_addr, read_data, tile_dim))
+            else:
+                tiles.append(Tile.EmptyTile(16))
 
     return tiles
 
