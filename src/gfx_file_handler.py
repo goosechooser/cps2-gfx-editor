@@ -1,9 +1,16 @@
-from os.path import isfile, join
-from os import listdir
 from struct import Struct
 
+#GFX files (for cps2) seem to always be in batches of 4
+#workflow along the lines of 
+#point at first file (in batch of 4)
+#grap the four files
+#interleave the 4 in one go
+
 def deinterleave(data, num_bytes):
-    """Deinterleaves a file and returns two lists."""
+    """Deinterleaves a bytearray.
+
+    Returns two bytearrays.
+    """
     evens = []
     odds = []
     deinterleave_s = Struct('c' * num_bytes)
@@ -16,7 +23,10 @@ def deinterleave(data, num_bytes):
     return b''.join(evens), b''.join(odds)
 
 def interleave(file1, file2, num_bytes):
-    """Interleaves two buffers together and return a dict."""
+    """Interleaves two bytearray buffers together.
+
+    Returns a bytearray.
+    """
     interleaved = []
     interleave_s = Struct('c' * num_bytes)
     file1_iter = interleave_s.iter_unpack(file1)
@@ -29,130 +39,62 @@ def interleave(file1, file2, num_bytes):
 
     return  b''.join(interleaved)
 
-def _get_file_handles(folder):
-    """Takes a path to a folder. Returns a list of file handles"""
-    files = [f for f in listdir(folder) if isfile(join(folder, f))]
-    file_handles = [open(folder + "/"+ f, 'rb') for f in files]
+def _get_handles(filepath):
+    splitpath = filepath.split("/")
+    fsplit = splitpath[-1].split('.')
 
-    return file_handles
+    fname = fsplit[0]
+    fnum = int(fsplit[1][:-1])
+
+    fnums = [''.join([str(fnum + (i * 2)), 'm']) for i in range(4)]
+    fnames = ['.'.join([fname, num]) for num in fnums]
+    joinedpath = '/'.join(splitpath[:-1]) + '/'
+
+    return [open(joinedpath  + name, 'rb') for name in fnames]
 
 def _close_handles(handles):
     for f in handles:
         f.close()
 
-def _prep_files(file_handles):
-    """Reads the entirety of each file in a folder. Returns a dict."""
-    keys = []
-    values = []
-    handles = _get_file_handles(file_handles)
+def _combine_file_names(fnames):
+    fsplit = [name.split("/")[-1] for name in fnames]
+    base = fsplit[0].split(".")[0]
+    fnums = [name.split(".")[-1] for name in fsplit]
 
-    for handle in handles:
-        keys.append(handle.name.split("/")[-1])
-        values.append(bytearray(handle.read()))
+    return '.'.join([base, *fnums, 'combined'])
 
+def interleave_cps2(fname):
+    """Interleaves a set of 4 cps2 graphics files."""
+    handles = _get_handles(fname)
+    names = [handle.name for handle in handles]
+    to_split = [bytearray(handle.read()) for handle in handles]
     _close_handles(handles)
 
-    return dict(zip(keys, values))
+    split_data = [(deinterleave(data, 2)) for data in to_split]
+    interleaved = []
+    data_iter = iter(split_data)
 
-def _split_gfx_files(to_split):
-    """Splits files into even and odd words. Returns a dict."""
-    keys = []
-    values = []
+    for sdata in data_iter:
+        next_data = next(data_iter)
+        even = interleave(sdata[0], next_data[0], 2)
+        odd = interleave(sdata[1], next_data[1], 2)
+        interleaved.append((even, odd))
 
-    for k, v in to_split.items():
-        new_keys = ['.'.join([k, 'even']), '.'.join([k, 'odd'])]
-        keys.extend(new_keys)
-        values.extend(deinterleave(v, 2))
+    inter_iter = iter(interleaved)
 
-    return dict(zip(keys, values))
+    second_interleave = []
+    for i in inter_iter:
+        next_data = next(inter_iter)
+        second_interleave.append(interleave(i[0], next_data[0], 64))
+        second_interleave.append(interleave(i[1], next_data[1], 64))
 
-def _first_interleave(to_interleave):
-    """Interleaves data on a 2 byte basis. Returns a dict"""
-    values = []
-    keys = []
-    file_numbers = [13, 14, 17, 18]
+    final = interleave(second_interleave[0], second_interleave[1], 1048576)
 
-    key_view = next(iter(to_interleave.keys()))
-    split_name = key_view.split('.')[0]
+    basepath = fname.split('/')[:-1]
+    comb_fname = _combine_file_names(names)
 
-    data = _split_gfx_files(to_interleave)
-
-    for i in file_numbers:
-        temp_keys = [[split_name, str(i), 'even'],
-                     [split_name, str(i+2), 'even'],
-                     [split_name, str(i), 'odd'],
-                     [split_name, str(i+2), 'odd']]
-        temp_keys = ['.'.join(key) for key in temp_keys]
-
-        values.append(interleave(data[temp_keys[0]], data[temp_keys[1]], 2))
-        values.append(interleave(data[temp_keys[2]], data[temp_keys[3]], 2))
-
-        temp_keys = [[split_name, str(i), str(i+2), 'even'],
-                     [split_name, str(i), str(i+2), 'odd']]
-        keys.extend(['.'.join(key) for key in temp_keys])
-
-    return dict(zip(keys, values))
-
-def _second_interleave(to_interleave):
-    """Interleaves data on a 64 byte basis. Returns a dict"""
-    values = []
-    keys = []
-    file_numbers = [13, 14]
-
-    key_view = next(iter(to_interleave.keys()))
-    split_name = key_view.split('.')[0]
-
-    data = to_interleave
-
-    for i in file_numbers:
-        temp_keys = [
-            [split_name, str(i), str(i+2), 'even'],
-            [split_name, str(i+4), str(i+6), 'even'],
-            [split_name, str(i), str(i+2), 'odd'],
-            [split_name, str(i+4), str(i+6), 'odd']
-            ]
-
-        temp_keys = ['.'.join(key) for key in temp_keys]
-
-        values.append(interleave(data[temp_keys[0]], data[temp_keys[1]], 64))
-        values.append(interleave(data[temp_keys[2]], data[temp_keys[3]], 64))
-
-        temp_keys = [
-            [split_name, str(i), str(i+2), str(i+4), str(i+6), 'even'],
-            [split_name, str(i), str(i+2), str(i+4), str(i+6), 'odd']
-            ]
-        keys.extend(['.'.join(key) for key in temp_keys])
-
-    return dict(zip(keys, values))
-
-def _final_interleave(to_interleave):
-    """Interleaves data on a 1048576 byte basis. Returns a dict"""
-    print("final interleave starts")
-    values = []
-    keys = []
-    file_numbers = [13, 14]
-
-    key_view = next(iter(to_interleave.keys()))
-    split_name = key_view.split('.')[0]
-
-    data = to_interleave
-
-    for i in file_numbers:
-        temp_keys = [
-            [split_name, str(i), str(i+2), str(i+4), str(i+6), 'even'],
-            [split_name, str(i), str(i+2), str(i+4), str(i+6), 'odd']
-            ]
-
-        temp_keys = ['.'.join(key) for key in temp_keys]
-
-        values.append(interleave(data[temp_keys[0]], data[temp_keys[1]], 1048576))
-
-        temp_keys = [
-            [split_name, str(i), str(i+2), str(i+4), str(i+6), 'final']
-            ]
-        keys.extend(['.'.join(key) for key in temp_keys])
-
-    return dict(zip(keys, values))
+    with open('/'.join([*basepath, comb_fname]), 'wb') as f:
+        f.write(final)
 
 def _first_deinterleave(to_deinterleave):
     keys = []
@@ -209,17 +151,6 @@ def _final_deinterleave(to_deinterleave):
 
     return dict(zip(keys, values))
 
-def interleave_files(folder_path):
-    graphics_data = _prep_files(folder_path)
-    graphics_data = _first_interleave(graphics_data)
-    graphics_data = _second_interleave(graphics_data)
-    graphics_data = _final_interleave(graphics_data)
-
-    return graphics_data
-    #for k, v in graphics_data.items():
-    #    with open('outputs/refactor/interleaved/' + k, 'wb') as f:
-    #        f.write(v)
-
 def deinterleave_files(folder_path):
     graphics_data = _prep_files(folder_path)
     graphics_data = _first_deinterleave(graphics_data)
@@ -230,3 +161,6 @@ def deinterleave_files(folder_path):
     #for k, v in graphics_data.items():
     #    with open('outputs/refactor/roms/' + k, 'wb') as f:
     #        f.write(v)
+
+# class Cps2Handler(object):
+#     def __init__(self)
