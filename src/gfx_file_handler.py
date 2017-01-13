@@ -1,3 +1,4 @@
+import os
 from struct import Struct
 
 #GFX files (for cps2) seem to always be in batches of 4
@@ -96,71 +97,31 @@ def interleave_cps2(fname):
     with open('/'.join([*basepath, comb_fname]), 'wb') as f:
         f.write(final)
 
-def _first_deinterleave(to_deinterleave):
-    keys = []
-    values = []
+def deinterleave_cps2(fname):
+    """Deinterleaves a interleaved cps2 graphics file."""
+    head, tail = os.path.split(fname)
+    split_tail = tail.split('.')
+    fnames = ['.'.join([split_tail[0], name]) for name in split_tail[1:-1]]
 
-    for k, v in to_deinterleave.items():
-        name = k.split('.')[:-1]
-        new_keys = ['.'.join([*name, 'even']), '.'.join([*name, 'odd'])]
-        keys.extend(new_keys)
-        values.extend(deinterleave(v, 1048576))
+    data = 0
+    with open(fname, 'rb') as f:
+        data = bytearray(f.read())
 
-    return dict(zip(keys, values))
+    first = deinterleave(data, 1048576)
 
-def _second_deinterleave(to_deinterleave):
-    keys = []
-    values = []
+    second = []
+    for half in first:
+        second.extend(deinterleave(half, 64))
 
-    for k, v in to_deinterleave.items():
-        name = k.split('.')
-        new_keys = ['.'.join([*name[:3], name[-1]]),
-                    '.'.join([name[0], *name[3:]])]
-        keys.extend(new_keys)
-        values.extend(deinterleave(v, 64))
+    final = []
+    for quarter in second:
+        final.extend(deinterleave(quarter, 2))
 
-    return dict(zip(keys, values))
+    deinterleaved = [interleave(final[i], final[i+4], 2) for i in range(4)]
 
-def _final_deinterleave(to_deinterleave):
-    keys = []
-    values = []
+    for i, fname in enumerate(fnames):
+        with open(os.path.join(head, fname), 'wb') as f:
+            f.write(deinterleaved[i])
 
-    for k, v in to_deinterleave.items():
-        name = k.split('.')
-        new_keys = ['.'.join([*name[:2], name[-1]]),
-                    '.'.join([name[0], *name[2:]])]
-        keys.extend(new_keys)
-        values.extend(deinterleave(v, 2))
-
-    interleaving = dict(zip(keys, values))
-
-    #Need to interleave all the odd/even files back together
-    keys = []
-    values = []
-    rom_prefix = next(iter(to_deinterleave.keys())).split('.')[0]
-
-    for num in range(13, 21):
-        name = [rom_prefix, str(num)]
-        joined = '.'.join(name)
-        keys.append(joined)
-
-        even = '.'.join([joined, 'even'])
-        odd = '.'.join([joined, 'odd'])
-
-        values.append(interleave(interleaving[even], interleaving[odd], 2))
-
-    return dict(zip(keys, values))
-
-def deinterleave_files(folder_path):
-    graphics_data = _prep_files(folder_path)
-    graphics_data = _first_deinterleave(graphics_data)
-    graphics_data = _second_deinterleave(graphics_data)
-    graphics_data = _final_deinterleave(graphics_data)
-
-    return graphics_data
-    #for k, v in graphics_data.items():
-    #    with open('outputs/refactor/roms/' + k, 'wb') as f:
-    #        f.write(v)
-
-# class Cps2Handler(object):
-#     def __init__(self)
+if __name__ == "__main__":
+    deinterleave_cps2("outputs/sfxgfx/")
