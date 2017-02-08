@@ -1,44 +1,42 @@
 import os
 from struct import Struct
 
-#GFX files (for cps2) seem to always be in batches of 4
-#workflow along the lines of 
-#point at first file (in batch of 4)
-#grap the four files
-#interleave the 4 in one go
+def deinterleave(data, nbytes, nsplit):
+    """Deinterleaves one bytearray into nsplit many bytearrays on a nbytes basis.
 
-def deinterleave(data, num_bytes):
-    """Deinterleaves a bytearray.
-
-    Returns two bytearrays.
+    Returns a list of bytearrays.
     """
-    evens = []
-    odds = []
-    deinterleave_s = Struct('c' * num_bytes)
+    deinterleaved = [[] for n in range(nsplit)]
+
+    deinterleave_s = Struct('c' * nbytes)
     deinterleave_iter = deinterleave_s.iter_unpack(data)
 
     for i in deinterleave_iter:
-        evens.extend([*i])
-        odds.extend([*next(deinterleave_iter)])
+        deinterleaved[0].extend([*i])
+        for j in range(1, len(deinterleaved[1:]) + 1):
+            next_ = next(deinterleave_iter)
+            deinterleaved[j].extend([*next_])
 
-    return b''.join(evens), b''.join(odds)
+    return [b''.join(delist) for delist in deinterleaved]
 
-def interleave(file1, file2, num_bytes):
-    """Interleaves two bytearray buffers together.
+def interleave(data, nbytes):
+    """Interleaves a list of bytearrays together on a nbytes basis.
 
     Returns a bytearray.
     """
+    interleave_s = Struct('c' * nbytes)
+    iters = [interleave_s.iter_unpack(inter) for inter in data]
+
     interleaved = []
-    interleave_s = Struct('c' * num_bytes)
-    file1_iter = interleave_s.iter_unpack(file1)
-    file2_iter = interleave_s.iter_unpack(file2)
+    #this could cause rounding errors?
+    iterlen = int(len(data[0]) / nbytes)
+    for i in range(iterlen):
+        nexts = [next(iter_) for iter_ in iters]
+        # print('nexts is:', nexts)
+        interleaved.extend([b''.join(val) for val in nexts])
+        # print('interleaved is:', interleaved)
 
-    for i in file1_iter:
-        file2_next = next(file2_iter)
-        interleave_temp = [*i, *file2_next]
-        interleaved.extend(interleave_temp)
-
-    return  b''.join(interleaved)
+    return b''.join(interleaved)
 
 def _get_handles(filepath):
     splitpath = filepath.split("/")
@@ -71,14 +69,14 @@ def interleave_cps2(fname):
     to_split = [bytearray(handle.read()) for handle in handles]
     _close_handles(handles)
 
-    split_data = [(deinterleave(data, 2)) for data in to_split]
+    split_data = [(deinterleave(data, 2, 2)) for data in to_split]
     interleaved = []
     data_iter = iter(split_data)
 
     for sdata in data_iter:
         next_data = next(data_iter)
-        even = interleave(sdata[0], next_data[0], 2)
-        odd = interleave(sdata[1], next_data[1], 2)
+        even = interleave([sdata[0], next_data[0]], 2)
+        odd = interleave([sdata[1], next_data[1]], 2)
         interleaved.append((even, odd))
 
     inter_iter = iter(interleaved)
@@ -86,10 +84,10 @@ def interleave_cps2(fname):
     second_interleave = []
     for i in inter_iter:
         next_data = next(inter_iter)
-        second_interleave.append(interleave(i[0], next_data[0], 64))
-        second_interleave.append(interleave(i[1], next_data[1], 64))
+        second_interleave.append(interleave([i[0], next_data[0]], 64))
+        second_interleave.append(interleave([i[1], next_data[1]], 64))
 
-    final = interleave(second_interleave[0], second_interleave[1], 1048576)
+    final = interleave([second_interleave[0], second_interleave[1]], 1048576)
 
     basepath = fname.split('/')[:-1]
     comb_fname = _combine_file_names(names)
@@ -107,17 +105,17 @@ def deinterleave_cps2(fname):
     with open(fname, 'rb') as f:
         data = bytearray(f.read())
 
-    first = deinterleave(data, 1048576)
+    first = deinterleave(data, 1048576, 2)
 
     second = []
     for half in first:
-        second.extend(deinterleave(half, 64))
+        second.extend(deinterleave(half, 64, 2))
 
     final = []
     for quarter in second:
-        final.extend(deinterleave(quarter, 2))
+        final.extend(deinterleave(quarter, 2, 2))
 
-    deinterleaved = [interleave(final[i], final[i+4], 2) for i in range(4)]
+    deinterleaved = [interleave([final[i], final[i+4]], 2) for i in range(4)]
 
     for i, fname in enumerate(fnames):
         with open(os.path.join(head, fname), 'wb') as f:
